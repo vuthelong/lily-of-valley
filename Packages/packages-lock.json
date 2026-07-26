@@ -200,6 +200,13 @@
       },
       "url": "https://packages.unity.com"
     },
+    "com.zbase.csv-reader": {
+      "version": "https://github.com/Zitga-Tech/ZBase.Csv-Reader.git?path=/Packages/ZBase.CsvReader",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "1a890d50949e8fd2bea6b0d7c4658ffc4c8ad820"
+    },
     "com.unity.modules.accessibility": {
       "version": "1.0.0",
       "depth": 0,
