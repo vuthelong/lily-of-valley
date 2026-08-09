@@ -7,7 +7,7 @@ namespace LilyOfValley.World
     {
         #region Field
 
-        public const float HoursPerDay = 24f;
+        public const float HoursPerDay = WorldClock.HoursPerDay;
 
         private const float OpaqueAlpha = 1f;
         private const float GradientStartTime = 0f;

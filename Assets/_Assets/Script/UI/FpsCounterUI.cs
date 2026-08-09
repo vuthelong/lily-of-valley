@@ -1,9 +1,10 @@
+using LilyOfValley.Core.Updates;
 using TMPro;
 using UnityEngine;
 
 namespace LilyOfValley.UI
 {
-    public sealed class FpsCounterUI : MonoBehaviour
+    public sealed class FpsCounterUI : MonoBehaviour, IUpdatable
     {
         #region Field
 
@@ -53,11 +54,21 @@ namespace LilyOfValley.UI
             enabled = false;
         }
 
-        private void OnEnable() => ResetSample();
-
-        private void Update()
+        private void OnEnable()
         {
-            this._elapsed += Time.unscaledDeltaTime;
+            ResetSample();
+            UpdateManager.Register(this, UpdateChannel.Persistent);
+        }
+
+        private void OnDisable() => UpdateManager.Unregister(this);
+
+        #endregion
+
+        #region Sampling
+
+        public void UpdateManually(float deltaTime)
+        {
+            this._elapsed += deltaTime;
             this._frames++;
 
             if (this._elapsed < this.sampleInterval) return;
@@ -65,6 +76,12 @@ namespace LilyOfValley.UI
             CurrentFps = this._frames / this._elapsed;
             ResetSample();
             Render();
+        }
+
+        private void ResetSample()
+        {
+            this._elapsed = 0f;
+            this._frames = 0;
         }
 
         #endregion
@@ -95,12 +112,6 @@ namespace LilyOfValley.UI
         #region Method
 
         public void SetVisible(bool visible) => this.label.enabled = visible;
-
-        private void ResetSample()
-        {
-            this._elapsed = 0f;
-            this._frames = 0;
-        }
 
         #endregion
     }

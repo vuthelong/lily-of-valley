@@ -1,20 +1,19 @@
 using System;
+using LilyOfValley.Core.Updates;
 using UnityEngine;
 
 namespace LilyOfValley.World
 {
     [DefaultExecutionOrder(ExecutionOrder)]
-    public sealed class DayNightCycle : MonoBehaviour
+    public sealed class DayNightCycle : MonoBehaviour, IUpdatable
     {
         #region Field
 
         private const int ExecutionOrder = -50;
         private const float SecondsPerMinute = 60f;
-        private const float MinutesPerHour = 60f;
         private const float MinDayLengthMinutes = 0.05f;
-        private const float FullCycle = 1f;
+        private const int MinDaysPerSeason = 1;
         private const float OneHour = 1f;
-        private const int FirstDay = 1;
 
         private const string JumpToStartHourMenu = "Jump To Start Hour";
         private const string SkipOneHourMenu = "Skip One Hour";
@@ -23,13 +22,13 @@ namespace LilyOfValley.World
 
         [SerializeField, Min(MinDayLengthMinutes)] private float dayLengthMinutes = 8f;
 
-        [SerializeField, Range(0f, DayNightPreset.HoursPerDay)] private float startHour = 7f;
+        [SerializeField, Range(0f, WorldClock.HoursPerDay)] private float startHour = 7f;
+
+        [SerializeField, Min(MinDaysPerSeason)] private int daysPerSeason = 28;
 
         [SerializeField] private bool paused;
 
-        private float _normalizedTime;
         private DayPhase _phase = DayPhase.Day;
-        private int _day = FirstDay;
 
         public event Action<float> TimeChanged;
         public event Action<DayPhase> PhaseChanged;
@@ -41,15 +40,21 @@ namespace LilyOfValley.World
 
         public DayNightPreset Preset => this.preset;
 
-        public float NormalizedTime => this._normalizedTime;
+        public float NormalizedTime => WorldClock.NormalizedTime;
 
-        public float Hour => this._normalizedTime * DayNightPreset.HoursPerDay;
+        public float Hour => WorldClock.Hour;
 
-        public int Minute => Mathf.FloorToInt(Hour % OneHour * MinutesPerHour);
+        public int Minute => WorldClock.Minute;
 
         public DayPhase Phase => this._phase;
 
-        public int Day => this._day;
+        public int Day => WorldClock.Day;
+
+        public int DayOfSeason => WorldClock.DayOfSeason;
+
+        public Season Season => WorldClock.CurrentSeason;
+
+        public int Year => WorldClock.Year;
 
         public bool IsPaused => this.paused;
 
@@ -64,29 +69,39 @@ namespace LilyOfValley.World
                 Debug.LogWarning($"{nameof(DayNightCycle)}: no {nameof(DayNightPreset)} assigned; lighting will not update.", this);
             }
 
-            this._normalizedTime = Mathf.Repeat(this.startHour, DayNightPreset.HoursPerDay) / DayNightPreset.HoursPerDay;
+            WorldClock.Configure(this.daysPerSeason);
+            WorldClock.SetHour(this.startHour);
             this._phase = EvaluatePhase();
         }
 
-        private void Update()
+        private void OnEnable()
         {
-            if (this.paused) return;
+            WorldClock.TimeChanged += OnWorldTimeChanged;
+            WorldClock.DayChanged += OnWorldDayChanged;
+            UpdateManager.Register(this);
+        }
 
-            Advance(Time.deltaTime / (this.dayLengthMinutes * SecondsPerMinute));
+        private void OnDisable()
+        {
+            UpdateManager.Unregister(this);
+            WorldClock.TimeChanged -= OnWorldTimeChanged;
+            WorldClock.DayChanged -= OnWorldDayChanged;
         }
 
         #endregion
 
         #region Time Control
 
-        public void SetHour(float hour)
+        public void UpdateManually(float deltaTime)
         {
-            this._normalizedTime = Mathf.Repeat(hour, DayNightPreset.HoursPerDay) / DayNightPreset.HoursPerDay;
-            TimeChanged?.Invoke(this._normalizedTime);
-            RefreshPhase();
+            if (this.paused) return;
+
+            WorldClock.Advance(deltaTime / (this.dayLengthMinutes * SecondsPerMinute));
         }
 
-        public void SkipHours(float hours) => Advance(hours / DayNightPreset.HoursPerDay);
+        public void SetHour(float hour) => WorldClock.SetHour(hour);
+
+        public void SkipHours(float hours) => WorldClock.SkipHours(hours);
 
         [ContextMenu(JumpToStartHourMenu)]
         public void JumpToStartHour() => SetHour(this.startHour);
@@ -97,21 +112,6 @@ namespace LilyOfValley.World
         public void SetPaused(bool isPaused) => this.paused = isPaused;
 
         public void SetDayLength(float minutes) => this.dayLengthMinutes = Mathf.Max(MinDayLengthMinutes, minutes);
-
-        private void Advance(float normalizedDelta)
-        {
-            this._normalizedTime += normalizedDelta;
-
-            while (this._normalizedTime >= FullCycle)
-            {
-                this._normalizedTime -= FullCycle;
-                this._day++;
-                DayChanged?.Invoke(this._day);
-            }
-
-            TimeChanged?.Invoke(this._normalizedTime);
-            RefreshPhase();
-        }
 
         #endregion
 
@@ -132,6 +132,18 @@ namespace LilyOfValley.World
 
             return this.preset.EvaluatePhase(Hour);
         }
+
+        #endregion
+
+        #region Method
+
+        private void OnWorldTimeChanged(float normalizedTime)
+        {
+            TimeChanged?.Invoke(normalizedTime);
+            RefreshPhase();
+        }
+
+        private void OnWorldDayChanged(int day) => DayChanged?.Invoke(day);
 
         #endregion
     }

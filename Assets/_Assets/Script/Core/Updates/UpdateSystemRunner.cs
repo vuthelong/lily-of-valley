@@ -11,15 +11,11 @@ namespace LilyOfValley.Core.Updates
 
         private const string RunnerName = "[Update System]";
 
-        private const float PausedTimeScale = 0f;
-
         private static UpdateSystemRunner _instance;
 
         #endregion
 
         #region Property
-
-        public static bool SkipUpdateWhenPaused { get; set; } = true;
 
         public static bool IsRunning => UpdateSystemRunner._instance != null;
 
@@ -29,9 +25,10 @@ namespace LilyOfValley.Core.Updates
 
         private void Update()
         {
-            if (SkipUpdateWhenPaused && Time.timeScale <= PausedTimeScale) return;
+            var unscaledDeltaTime = Time.unscaledDeltaTime;
 
-            UpdateManager.Tick(Time.deltaTime);
+            TimeService.Tick(unscaledDeltaTime);
+            UpdateManager.Tick(Time.deltaTime, unscaledDeltaTime);
         }
 
         private void FixedUpdate() => FixedUpdateManager.Tick(Time.fixedDeltaTime);
@@ -50,6 +47,7 @@ namespace LilyOfValley.Core.Updates
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Bootstrap()
         {
+            TimeService.Clear();
             UpdateManager.Clear();
             FixedUpdateManager.Clear();
 

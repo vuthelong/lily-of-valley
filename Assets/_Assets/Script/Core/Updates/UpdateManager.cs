@@ -4,34 +4,66 @@ namespace LilyOfValley.Core.Updates
     {
         #region Field
 
-        private const int InitialCapacity = 256;
+        private const int GameplayCapacity = 256;
 
-        private static readonly TickRegistry<IUpdatable> Registry =
-            new(static (updatable, deltaTime) => updatable.UpdateManually(deltaTime), InitialCapacity);
+        private const int PersistentCapacity = 32;
+
+        private static readonly TickRegistry<IUpdatable> GameplayRegistry = new(Invoke, GameplayCapacity);
+
+        private static readonly TickRegistry<IUpdatable> PersistentRegistry = new(Invoke, PersistentCapacity);
 
         #endregion
 
         #region Property
 
-        public static int Count => UpdateManager.Registry.Count;
+        public static int Count => UpdateManager.GameplayRegistry.Count + UpdateManager.PersistentRegistry.Count;
 
-        public static int ChunkSize
+        public static int GameplayCount => UpdateManager.GameplayRegistry.Count;
+
+        public static int PersistentCount => UpdateManager.PersistentRegistry.Count;
+
+        public static int GameplayChunkSize
         {
-            get => UpdateManager.Registry.ChunkSize;
-            set => UpdateManager.Registry.ChunkSize = value;
+            get => UpdateManager.GameplayRegistry.ChunkSize;
+            set => UpdateManager.GameplayRegistry.ChunkSize = value;
+        }
+
+        #endregion
+
+        #region Registration
+
+        public static bool Register(IUpdatable updatable, UpdateChannel channel = UpdateChannel.Gameplay) =>
+            Resolve(channel).Register(updatable);
+
+        public static bool Unregister(IUpdatable updatable)
+        {
+            var leftGameplay = UpdateManager.GameplayRegistry.Unregister(updatable);
+            var leftPersistent = UpdateManager.PersistentRegistry.Unregister(updatable);
+
+            return leftGameplay || leftPersistent;
+        }
+
+        public static void Clear()
+        {
+            UpdateManager.GameplayRegistry.Clear();
+            UpdateManager.PersistentRegistry.Clear();
         }
 
         #endregion
 
         #region Method
 
-        public static bool Register(IUpdatable updatable) => UpdateManager.Registry.Register(updatable);
+        public static void Tick(float deltaTime, float unscaledDeltaTime)
+        {
+            if (!TimeService.IsPaused) UpdateManager.GameplayRegistry.Tick(deltaTime);
 
-        public static bool Unregister(IUpdatable updatable) => UpdateManager.Registry.Unregister(updatable);
+            UpdateManager.PersistentRegistry.Tick(unscaledDeltaTime);
+        }
 
-        public static void Tick(float deltaTime) => UpdateManager.Registry.Tick(deltaTime);
+        private static TickRegistry<IUpdatable> Resolve(UpdateChannel channel) =>
+            channel == UpdateChannel.Persistent ? UpdateManager.PersistentRegistry : UpdateManager.GameplayRegistry;
 
-        public static void Clear() => UpdateManager.Registry.Clear();
+        private static void Invoke(IUpdatable updatable, float deltaTime) => updatable.UpdateManually(deltaTime);
 
         #endregion
     }
