@@ -1,11 +1,12 @@
 using System;
+using LilyOfValley.Core.Updates;
 using LilyOfValley.Units.Data;
 using UnityEngine;
 
 namespace LilyOfValley.Units
 {
     [DisallowMultipleComponent]
-    public class Character : MonoBehaviour
+    public class Character : MonoBehaviour, IUpdatable, IFixedUpdatable
     {
         #region Field
 
@@ -21,7 +22,9 @@ namespace LilyOfValley.Units
 
         private CharacterBehaviour[] _behaviours;
         private ICharacterTick[] _tickables;
+        private ICharacterFixedTick[] _fixedTickables;
         private int _tickableCount;
+        private int _fixedTickableCount;
 
         public event Action<Character> Built;
 
@@ -50,11 +53,27 @@ namespace LilyOfValley.Units
             Build(this.startLevel);
         }
 
-        protected virtual void Update()
+        protected virtual void OnEnable()
+        {
+            UpdateManager.Register(this);
+            FixedUpdateManager.Register(this);
+        }
+
+        protected virtual void OnDisable()
+        {
+            UpdateManager.Unregister(this);
+            FixedUpdateManager.Unregister(this);
+        }
+
+        protected virtual void OnDestroy() => Release();
+
+        #endregion
+
+        #region Ticking
+
+        public virtual void UpdateManually(float deltaTime)
         {
             if (Model == null) return;
-
-            var deltaTime = Time.deltaTime;
 
             for (var i = 0; i < this._tickableCount; i++)
             {
@@ -62,7 +81,15 @@ namespace LilyOfValley.Units
             }
         }
 
-        protected virtual void OnDestroy() => Release();
+        public virtual void FixedUpdateManually(float fixedDeltaTime)
+        {
+            if (Model == null) return;
+
+            for (var i = 0; i < this._fixedTickableCount; i++)
+            {
+                this._fixedTickables[i].FixedTick(fixedDeltaTime);
+            }
+        }
 
         #endregion
 
@@ -92,7 +119,7 @@ namespace LilyOfValley.Units
 
             Model = model;
             AttachBehaviours();
-            this.Built?.Invoke(this);
+            Built?.Invoke(this);
         }
 
         public void Release()
@@ -105,11 +132,13 @@ namespace LilyOfValley.Units
             }
 
             this._tickableCount = 0;
+            this._fixedTickableCount = 0;
             Array.Clear(this._tickables, 0, this._tickables.Length);
+            Array.Clear(this._fixedTickables, 0, this._fixedTickables.Length);
 
             Model.Dispose();
             Model = null;
-            this.Released?.Invoke(this);
+            Released?.Invoke(this);
         }
 
         #endregion
@@ -134,21 +163,29 @@ namespace LilyOfValley.Units
 
             this._behaviours = GetComponentsInChildren<CharacterBehaviour>(true);
             this._tickables = new ICharacterTick[this._behaviours.Length];
+            this._fixedTickables = new ICharacterFixedTick[this._behaviours.Length];
         }
 
         private void AttachBehaviours()
         {
             this._tickableCount = 0;
+            this._fixedTickableCount = 0;
 
             for (var i = 0; i < this._behaviours.Length; i++)
             {
                 var behaviour = this._behaviours[i];
                 behaviour.Attach(this);
 
-                if (behaviour is not ICharacterTick tickable) continue;
+                if (behaviour is ICharacterTick tickable)
+                {
+                    this._tickables[this._tickableCount] = tickable;
+                    this._tickableCount++;
+                }
 
-                this._tickables[this._tickableCount] = tickable;
-                this._tickableCount++;
+                if (behaviour is not ICharacterFixedTick fixedTickable) continue;
+
+                this._fixedTickables[this._fixedTickableCount] = fixedTickable;
+                this._fixedTickableCount++;
             }
         }
 

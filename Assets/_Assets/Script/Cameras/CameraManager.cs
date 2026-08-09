@@ -147,7 +147,7 @@ namespace LilyOfValley.Cameras
             }
 
             this._activeView = view;
-            this.ViewChanged?.Invoke(view);
+            ViewChanged?.Invoke(view);
         }
 
         public void CutTo(CameraViewId view)

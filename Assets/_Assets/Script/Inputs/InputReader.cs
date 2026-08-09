@@ -176,11 +176,11 @@ namespace LilyOfValley.Inputs
 
         private void OnSprint(InputAction.CallbackContext context) => IsSprinting = context.ReadValueAsButton();
 
-        private void OnJump(InputAction.CallbackContext context) => this.JumpPressed?.Invoke();
+        private void OnJump(InputAction.CallbackContext context) => JumpPressed?.Invoke();
 
-        private void OnInteract(InputAction.CallbackContext context) => this.InteractPressed?.Invoke();
+        private void OnInteract(InputAction.CallbackContext context) => InteractPressed?.Invoke();
 
-        private void OnCancel(InputAction.CallbackContext context) => this.MenuTogglePressed?.Invoke();
+        private void OnCancel(InputAction.CallbackContext context) => MenuTogglePressed?.Invoke();
 
         #endregion
 

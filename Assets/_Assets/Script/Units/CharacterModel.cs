@@ -78,7 +78,7 @@ namespace LilyOfValley.Units
             Level = clamped;
             Data.ApplyTo(Stats, clamped);
             SetHealth(MaxHealth * ratio);
-            this.LevelChanged?.Invoke(clamped);
+            LevelChanged?.Invoke(clamped);
         }
 
         public bool AddExperience(int amount)
@@ -153,7 +153,7 @@ namespace LilyOfValley.Units
             if (IsAlive) return;
 
             SetHealth(MaxHealth * Mathf.Clamp01(healthPercent));
-            this.Revived?.Invoke(this);
+            Revived?.Invoke(this);
         }
 
         private void SetHealth(float value)
@@ -163,9 +163,9 @@ namespace LilyOfValley.Units
 
             var wasAlive = IsAlive;
             CurrentHealth = clamped;
-            this.HealthChanged?.Invoke(CurrentHealth, MaxHealth);
+            HealthChanged?.Invoke(CurrentHealth, MaxHealth);
 
-            if (wasAlive && !IsAlive) this.Died?.Invoke(this);
+            if (wasAlive && !IsAlive) Died?.Invoke(this);
         }
 
         private void OnMaxHealthChanged(Stat stat)
@@ -176,7 +176,7 @@ namespace LilyOfValley.Units
                 return;
             }
 
-            this.HealthChanged?.Invoke(CurrentHealth, stat.Value);
+            HealthChanged?.Invoke(CurrentHealth, stat.Value);
         }
 
         #endregion
@@ -188,10 +188,10 @@ namespace LilyOfValley.Units
             if (this._healthStat != null) this._healthStat.Changed -= OnMaxHealthChanged;
 
             Stats.ClearSubscribers();
-            this.HealthChanged = null;
-            this.Died = null;
-            this.Revived = null;
-            this.LevelChanged = null;
+            HealthChanged = null;
+            Died = null;
+            Revived = null;
+            LevelChanged = null;
         }
 
         #endregion

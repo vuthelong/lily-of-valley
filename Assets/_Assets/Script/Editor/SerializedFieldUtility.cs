@@ -33,6 +33,14 @@ namespace LilyOfValley.EditorTools
             property.intValue = value;
         }
 
+        public static void SetFloat(SerializedObject serialized, string fieldName, float value)
+        {
+            var property = FindField(serialized, fieldName);
+            if (property == null) return;
+
+            property.floatValue = value;
+        }
+
         #endregion
 
         #region Method

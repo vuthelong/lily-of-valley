@@ -82,7 +82,7 @@ namespace LilyOfValley.World
         public void SetHour(float hour)
         {
             this._normalizedTime = Mathf.Repeat(hour, DayNightPreset.HoursPerDay) / DayNightPreset.HoursPerDay;
-            this.TimeChanged?.Invoke(this._normalizedTime);
+            TimeChanged?.Invoke(this._normalizedTime);
             RefreshPhase();
         }
 
@@ -106,10 +106,10 @@ namespace LilyOfValley.World
             {
                 this._normalizedTime -= FullCycle;
                 this._day++;
-                this.DayChanged?.Invoke(this._day);
+                DayChanged?.Invoke(this._day);
             }
 
-            this.TimeChanged?.Invoke(this._normalizedTime);
+            TimeChanged?.Invoke(this._normalizedTime);
             RefreshPhase();
         }
 
@@ -123,7 +123,7 @@ namespace LilyOfValley.World
             if (phase == this._phase) return;
 
             this._phase = phase;
-            this.PhaseChanged?.Invoke(phase);
+            PhaseChanged?.Invoke(phase);
         }
 
         private DayPhase EvaluatePhase()

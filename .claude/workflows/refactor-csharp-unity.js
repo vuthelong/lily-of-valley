@@ -95,7 +95,7 @@ Its non-negotiables, summarized (the file wins on any conflict):
 - Blank line after every flow-exit statement (return, break, continue, throw, goto, yield break) that is not the last line of its block, and after the closing brace of a multi-line guard. In a switch, that means a blank line between cases. One blank line between members; never two in a row; never right after { or before }.
 - Naming: Unity conventions primary, Rider fills the gaps. Private fields _camelCase; [SerializeField] private fields camelCase with NO underscore; const and static readonly PascalCase; methods start with a verb; bools prefixed is/has/can/should; interfaces I-prefixed; enums singular.
 - A serialized field is always "[SerializeField] private" and stays private. If something outside the class reads it, add a property in the Property region: "public float MoveSpeed => this.moveSpeed;". Never [field: SerializeField], never a public serialized field. Add the property only where an existing caller needs it — this is a style refactor, not an API expansion.
-- this. on every instance field access. Never on properties, locals, params, or statics.
+- this. on every instance field access, and on NOTHING else. Never on a property, never on an event (a field-like event is an event, not a field — invoke it bare: "HealthChanged?.Invoke(x);"), never on a method, local, param or static. Strip every other redundant qualifier too: no "base." unless the member is shadowed, no namespace qualifier the file's usings already cover (keep UnityEngine.Object where "using System;" makes bare Object ambiguous).
 - var for locals whenever the right-hand side makes the type obvious.
 - Early return instead of nested ifs.
 - NO comments at all. Delete every existing comment, banner, divider and commented-out block. Only /// <summary> on cross-assembly public API survives.
@@ -235,7 +235,7 @@ Method:
    - blank line after every return / break / continue / throw that is not the last line of its block, and between switch cases
    - naming table compliance, including _camelCase private fields and no-underscore serialized fields
    - every serialized field is [SerializeField] private, exposed only through a property in "Property"
-   - this. on every instance field access, and on nothing else
+   - this. on every instance field access, and on nothing else — flag any this. on a property, event or method, and any other redundant qualifier
    - var on obvious locals
    - ZERO comments remain
    - no magic numbers or repeated string literals left inline

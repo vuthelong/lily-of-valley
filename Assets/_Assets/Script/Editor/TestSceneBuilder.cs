@@ -2,6 +2,9 @@ using LilyOfValley.Core;
 using LilyOfValley.Inputs;
 using LilyOfValley.Player;
 using LilyOfValley.UI;
+using LilyOfValley.Units;
+using LilyOfValley.Units.Behaviours;
+using LilyOfValley.Units.Data;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -31,6 +34,10 @@ namespace LilyOfValley.EditorTools
 
         private const string InputReaderFieldName = "inputReader";
         private const string CameraPivotFieldName = "cameraPivot";
+        private const string CharacterDataFieldName = "data";
+        private const string StartLevelFieldName = "startLevel";
+
+        private const int PlayerStartLevel = 1;
 
         private const float CapsuleHeight = 2f;
         private const float CapsuleRadius = 0.5f;
@@ -104,6 +111,28 @@ namespace LilyOfValley.EditorTools
             return player;
         }
 
+        private static void EnsureCharacter(GameObject player)
+        {
+            if (player == null) return;
+
+            var data = CharacterDataFactory.EnsurePlayerData();
+            if (data == null)
+            {
+                Debug.LogWarning($"{nameof(TestSceneBuilder)}: no {nameof(CharacterData)}; {nameof(Character)} skipped.");
+                return;
+            }
+
+            if (!player.TryGetComponent<Character>(out var character)) character = Undo.AddComponent<Character>(player);
+
+            ApplyFields(character, serialized =>
+            {
+                SetObject(serialized, CharacterDataFieldName, data);
+                SetInt(serialized, StartLevelFieldName, PlayerStartLevel);
+            });
+
+            if (player.GetComponent<CharacterRegenBehaviour>() == null) Undo.AddComponent<CharacterRegenBehaviour>(player);
+        }
+
         private static void EnsureCameraSystem(GameObject player)
         {
             var pivot = player != null ? player.transform.Find(PivotName) : null;
@@ -173,7 +202,10 @@ namespace LilyOfValley.EditorTools
             }
 
             CreateGround(scene);
-            EnsureCameraSystem(EnsurePlayer(scene, reader));
+
+            var player = EnsurePlayer(scene, reader);
+            EnsureCharacter(player);
+            EnsureCameraSystem(player);
             EnsureBootstrap(reader);
             EnsureHud(scene);
 
