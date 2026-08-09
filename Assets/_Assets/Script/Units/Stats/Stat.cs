@@ -140,7 +140,7 @@ namespace LilyOfValley.Units.Stats
             if (Mathf.Approximately(this._value, value)) return;
 
             this._value = value;
-            Changed?.Invoke(this);
+            this.Changed?.Invoke(this);
         }
 
         private float Clamp(float value) => Mathf.Clamp(value, this._minValue, this._maxValue);
@@ -154,7 +154,7 @@ namespace LilyOfValley.Units.Stats
 
         #region Method
 
-        public void ClearSubscribers() => Changed = null;
+        public void ClearSubscribers() => this.Changed = null;
 
         #endregion
     }

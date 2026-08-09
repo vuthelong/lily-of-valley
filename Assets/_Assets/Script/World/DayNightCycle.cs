@@ -3,11 +3,12 @@ using UnityEngine;
 
 namespace LilyOfValley.World
 {
-    [DefaultExecutionOrder(-50)]
+    [DefaultExecutionOrder(ExecutionOrder)]
     public sealed class DayNightCycle : MonoBehaviour
     {
         #region Field
 
+        private const int ExecutionOrder = -50;
         private const float SecondsPerMinute = 60f;
         private const float MinutesPerHour = 60f;
         private const float MinDayLengthMinutes = 0.05f;
@@ -93,6 +94,10 @@ namespace LilyOfValley.World
         [ContextMenu(SkipOneHourMenu)]
         public void SkipOneHour() => SkipHours(OneHour);
 
+        public void SetPaused(bool isPaused) => this.paused = isPaused;
+
+        public void SetDayLength(float minutes) => this.dayLengthMinutes = Mathf.Max(MinDayLengthMinutes, minutes);
+
         private void Advance(float normalizedDelta)
         {
             this._normalizedTime += normalizedDelta;
@@ -127,14 +132,6 @@ namespace LilyOfValley.World
 
             return this.preset.EvaluatePhase(Hour);
         }
-
-        #endregion
-
-        #region Method
-
-        public void SetPaused(bool value) => this.paused = value;
-
-        public void SetDayLength(float minutes) => this.dayLengthMinutes = Mathf.Max(MinDayLengthMinutes, minutes);
 
         #endregion
     }

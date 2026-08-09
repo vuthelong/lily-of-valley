@@ -5,12 +5,13 @@ using UnityEngine;
 
 namespace LilyOfValley.Cameras
 {
-    [DefaultExecutionOrder(-90)]
+    [DefaultExecutionOrder(ExecutionOrder)]
     public sealed class CameraManager : MonoBehaviour
     {
         #region Field
 
-        private const bool IncludeInactiveRigs = true;
+        private const int ExecutionOrder = -90;
+        private const bool ShouldIncludeInactiveRigs = true;
 
         [SerializeField] private CinemachineBrain brain;
 
@@ -118,7 +119,7 @@ namespace LilyOfValley.Cameras
 
         private void CollectRigs()
         {
-            var rigs = GetComponentsInChildren<CameraRig>(IncludeInactiveRigs);
+            var rigs = GetComponentsInChildren<CameraRig>(ShouldIncludeInactiveRigs);
 
             for (var i = 0; i < rigs.Length; i++)
             {

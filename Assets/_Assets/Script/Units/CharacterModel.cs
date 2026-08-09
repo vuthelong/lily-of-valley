@@ -5,10 +5,6 @@ using UnityEngine;
 
 namespace LilyOfValley.Units
 {
-    /// <summary>
-    /// Runtime data of a character: identity, level, stats and vitals. Plain C#, no scene
-    /// dependency, so it can be created and unit tested without a GameObject.
-    /// </summary>
     public class CharacterModel : IDisposable
     {
         #region Field
@@ -85,7 +81,6 @@ namespace LilyOfValley.Units
             this.LevelChanged?.Invoke(clamped);
         }
 
-        /// <summary>Adds experience and levels up as many times as it covers. Returns true when the level changed.</summary>
         public bool AddExperience(int amount)
         {
             if (amount <= 0 || IsMaxLevel) return false;
@@ -112,7 +107,6 @@ namespace LilyOfValley.Units
 
         #region Damage Handling
 
-        /// <summary>Applies armor mitigation and returns the health actually removed.</summary>
         public virtual float TakeDamage(float amount, CharacterModel source = null)
         {
             if (amount <= 0f || !IsAlive) return 0f;

@@ -12,11 +12,11 @@ namespace LilyOfValley.Core
 
         #region Method
 
-        public static void SetLocked(bool locked)
+        public static void SetLocked(bool isLocked)
         {
-            IsLocked = locked;
-            Cursor.lockState = locked ? CursorLockMode.Locked : CursorLockMode.None;
-            Cursor.visible = !locked;
+            IsLocked = isLocked;
+            Cursor.lockState = isLocked ? CursorLockMode.Locked : CursorLockMode.None;
+            Cursor.visible = !isLocked;
         }
 
         #endregion

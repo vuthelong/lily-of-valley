@@ -2,10 +2,6 @@ using UnityEngine;
 
 namespace LilyOfValley.Units
 {
-    /// <summary>
-    /// One slice of character behaviour. Add components to the character prefab; the order they sit
-    /// in the Inspector is the order <see cref="Character"/> attaches and ticks them.
-    /// </summary>
     public abstract class CharacterBehaviour : MonoBehaviour
     {
         #region Property

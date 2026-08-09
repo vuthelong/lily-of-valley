@@ -4,10 +4,6 @@ using UnityEngine;
 
 namespace LilyOfValley.Units
 {
-    /// <summary>
-    /// Scene presence of a character: owns its <see cref="CharacterModel"/> and its
-    /// <see cref="CharacterBehaviour"/> components, and drives their tick from one Update.
-    /// </summary>
     [DisallowMultipleComponent]
     public class Character : MonoBehaviour
     {

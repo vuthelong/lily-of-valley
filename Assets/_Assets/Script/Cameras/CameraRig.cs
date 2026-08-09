@@ -46,11 +46,11 @@ namespace LilyOfValley.Cameras
 
         #region Method
 
-        public void SetActive(bool active)
+        public void SetActive(bool isActive)
         {
             if (this.virtualCamera == null) return;
 
-            this.virtualCamera.Priority = active ? ActivePriority : IdlePriority;
+            this.virtualCamera.Priority = isActive ? ActivePriority : IdlePriority;
         }
 
         public void SetTargets(Transform follow, Transform lookAt)

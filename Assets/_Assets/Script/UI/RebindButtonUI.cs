@@ -155,7 +155,7 @@ namespace LilyOfValley.UI
 
             SetInteractable(false);
             if (this.bindingLabel != null) this.bindingLabel.text = this.waitingText;
-            RebindStarted?.Invoke(this);
+            this.RebindStarted?.Invoke(this);
 
             this._operation = InputRebindService.StartRebind(this._action, this.bindingIndex, OnRebindFinished);
             if (this._operation == null) OnRebindFinished(false);
@@ -166,7 +166,7 @@ namespace LilyOfValley.UI
             this._operation = null;
             SetInteractable(true);
             Refresh();
-            RebindFinished?.Invoke(this);
+            this.RebindFinished?.Invoke(this);
         }
 
         private void OnResetClicked()
