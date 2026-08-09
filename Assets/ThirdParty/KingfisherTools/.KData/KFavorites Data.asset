@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &1
+MonoBehaviour:
+  m_ObjectHideFlags: 61
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8b13a7b37be7e1d4aa7853a7a82f8505, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kingfisher.KFavorites::Kingfisher.KFavorites.KFavoritesData
+  pages:
+  - items:
+    - globalId:
+        globalObjectIdString: GlobalObjectId_V1-1-2591171990766dc479cd4dfdeabff7fd-102900000-0
+      typeString: UnityEditor.DefaultAsset, UnityEditor.CoreModule, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      isSceneGameObject: 0
+      isFolder: 1
+      isAsset: 0
+      cachedObject: {fileID: 102900000, guid: 2591171990766dc479cd4dfdeabff7fd, type: 3}
+      persistentId: 1052281869
+    name: Page 1
+    persistentId: 1039258866
+  - items: []
+    name: Page 2
+    persistentId: 0
+  rowScale: 1
