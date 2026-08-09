@@ -11,28 +11,40 @@ namespace LilyOfValley.Units
     [DisallowMultipleComponent]
     public class Character : MonoBehaviour
     {
-        #region Fields
-        private static int _nextUid = 1;
+        #region Field
 
-        public event Action<Character> Built;
-        public event Action<Character> Released;
+        private const int FirstUid = 1;
+
+        private static int _nextUid = FirstUid;
 
         [SerializeField] private CharacterData data;
+
         [SerializeField, Min(1)] private int startLevel = 1;
+
         [SerializeField] private bool buildOnAwake = true;
 
         private CharacterBehaviour[] _behaviours;
         private ICharacterTick[] _tickables;
         private int _tickableCount;
+
+        public event Action<Character> Built;
+
+        public event Action<Character> Released;
+
         #endregion
 
-        #region Properties
+        #region Property
+
         public CharacterModel Model { get; private set; }
+
         public CharacterData Data => this.data;
+
         public bool IsBuilt => Model != null;
+
         #endregion
 
         #region Unity Lifecycle
+
         protected virtual void Awake()
         {
             EnsureBehaviourCache();
@@ -47,13 +59,19 @@ namespace LilyOfValley.Units
             if (Model == null) return;
 
             var deltaTime = Time.deltaTime;
-            for (var i = 0; i < this._tickableCount; i++) this._tickables[i].Tick(deltaTime);
+
+            for (var i = 0; i < this._tickableCount; i++)
+            {
+                this._tickables[i].Tick(deltaTime);
+            }
         }
 
         protected virtual void OnDestroy() => Release();
+
         #endregion
 
-        #region Public Methods
+        #region Model Binding
+
         public void Build(int level)
         {
             if (this.data == null)
@@ -62,7 +80,7 @@ namespace LilyOfValley.Units
                 return;
             }
 
-            Build(new CharacterModel(this.data, level, _nextUid++));
+            Build(new CharacterModel(this.data, level, Character._nextUid++));
         }
 
         public void Build(CharacterModel model)
@@ -78,22 +96,29 @@ namespace LilyOfValley.Units
 
             Model = model;
             AttachBehaviours();
-            Built?.Invoke(this);
+            this.Built?.Invoke(this);
         }
 
         public void Release()
         {
             if (Model == null) return;
 
-            for (var i = 0; i < this._behaviours.Length; i++) this._behaviours[i].Detach();
+            for (var i = 0; i < this._behaviours.Length; i++)
+            {
+                this._behaviours[i].Detach();
+            }
 
             this._tickableCount = 0;
             Array.Clear(this._tickables, 0, this._tickables.Length);
 
             Model.Dispose();
             Model = null;
-            Released?.Invoke(this);
+            this.Released?.Invoke(this);
         }
+
+        #endregion
+
+        #region Behaviour Handling
 
         public T GetBehaviour<T>() where T : class
         {
@@ -106,9 +131,7 @@ namespace LilyOfValley.Units
 
             return null;
         }
-        #endregion
 
-        #region Private Methods
         private void EnsureBehaviourCache()
         {
             if (this._behaviours != null) return;
@@ -132,6 +155,7 @@ namespace LilyOfValley.Units
                 this._tickableCount++;
             }
         }
+
         #endregion
     }
 }

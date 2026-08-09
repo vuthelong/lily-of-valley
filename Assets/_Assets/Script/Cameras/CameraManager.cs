@@ -8,31 +8,48 @@ namespace LilyOfValley.Cameras
     [DefaultExecutionOrder(-90)]
     public sealed class CameraManager : MonoBehaviour
     {
-        #region Fields
-        public event Action<CameraViewId> ViewChanged;
+        #region Field
+
+        private const bool IncludeInactiveRigs = true;
 
         [SerializeField] private CinemachineBrain brain;
+
         [SerializeField] private CinemachineImpulseSource impulseSource;
+
         [SerializeField] private CameraViewId defaultView = CameraViewId.ThirdPerson;
+
         [SerializeField] private Transform followTarget;
+
         [SerializeField] private Transform lookAtTarget;
 
         private readonly Dictionary<CameraViewId, CameraRig> _rigs = new();
+
         private CameraViewId _activeView = CameraViewId.None;
+
+        public event Action<CameraViewId> ViewChanged;
+
         #endregion
 
-        #region Properties
+        #region Property
+
         public static CameraManager Instance { get; private set; }
 
         public CinemachineBrain Brain => this.brain;
+
         public Camera OutputCamera => this.brain == null ? null : this.brain.OutputCamera;
+
         public CameraViewId ActiveView => this._activeView;
+
         public bool IsBlending => this.brain != null && this.brain.IsBlending;
+
         public Transform FollowTarget => this.followTarget;
+
         public Transform LookAtTarget => this.lookAtTarget;
+
         #endregion
 
         #region Unity Lifecycle
+
         private void Awake()
         {
             if (Instance != null && Instance != this)
@@ -57,9 +74,11 @@ namespace LilyOfValley.Cameras
         {
             if (Instance == this) Instance = null;
         }
+
         #endregion
 
-        #region Public Methods
+        #region Rig Registry
+
         public static void Register(CameraRig rig)
         {
             if (Instance == null) return;
@@ -76,68 +95,6 @@ namespace LilyOfValley.Cameras
 
         public bool TryGetRig(CameraViewId view, out CameraRig rig) => this._rigs.TryGetValue(view, out rig);
 
-        public void SwitchTo(CameraViewId view)
-        {
-            if (view == CameraViewId.None || view == this._activeView) return;
-
-            if (!this._rigs.ContainsKey(view))
-            {
-                Debug.LogWarning($"{nameof(CameraManager)}: no {nameof(CameraRig)} registered for '{view}'.", this);
-                return;
-            }
-
-            foreach (var pair in this._rigs) pair.Value.SetActive(pair.Key == view);
-
-            this._activeView = view;
-            ViewChanged?.Invoke(view);
-        }
-
-        public void CutTo(CameraViewId view)
-        {
-            SwitchTo(view);
-
-            if (this.brain == null) return;
-
-            this.brain.ResetState();
-        }
-
-        public void SetTargets(Transform follow, Transform lookAt)
-        {
-            this.followTarget = follow;
-            this.lookAtTarget = lookAt;
-            ApplyTargets();
-        }
-
-        public void SetFollowTarget(Transform follow) => SetTargets(follow, this.lookAtTarget);
-
-        public void SetLookAtTarget(Transform lookAt) => SetTargets(this.followTarget, lookAt);
-
-        public void Shake(float force)
-        {
-            if (!HasImpulseSource()) return;
-
-            this.impulseSource.GenerateImpulseWithForce(force);
-        }
-
-        public void Shake(Vector3 velocity)
-        {
-            if (!HasImpulseSource()) return;
-
-            this.impulseSource.GenerateImpulseWithVelocity(velocity);
-        }
-
-        public void SetFieldOfView(CameraViewId view, float fieldOfView)
-        {
-            if (!TryGetRig(view, out var rig)) return;
-            if (rig.VirtualCamera is not CinemachineCamera camera) return;
-
-            camera.Lens.FieldOfView = fieldOfView;
-        }
-
-        public void SetFieldOfView(float fieldOfView) => SetFieldOfView(this._activeView, fieldOfView);
-        #endregion
-
-        #region Private Methods
         private void Add(CameraRig rig)
         {
             if (rig == null || rig.Id == CameraViewId.None) return;
@@ -153,6 +110,7 @@ namespace LilyOfValley.Cameras
         private void Remove(CameraRig rig)
         {
             if (rig == null) return;
+
             if (!this._rigs.TryGetValue(rig.Id, out var registered) || registered != rig) return;
 
             this._rigs.Remove(rig.Id);
@@ -160,19 +118,119 @@ namespace LilyOfValley.Cameras
 
         private void CollectRigs()
         {
-            var rigs = GetComponentsInChildren<CameraRig>(true);
-            for (var i = 0; i < rigs.Length; i++) Add(rigs[i]);
+            var rigs = GetComponentsInChildren<CameraRig>(IncludeInactiveRigs);
+
+            for (var i = 0; i < rigs.Length; i++)
+            {
+                Add(rigs[i]);
+            }
         }
+
+        #endregion
+
+        #region View Switching
+
+        public void SwitchTo(CameraViewId view)
+        {
+            if (view == CameraViewId.None || view == this._activeView) return;
+
+            if (!this._rigs.ContainsKey(view))
+            {
+                Debug.LogWarning($"{nameof(CameraManager)}: no {nameof(CameraRig)} registered for '{view}'.", this);
+                return;
+            }
+
+            foreach (var pair in this._rigs)
+            {
+                pair.Value.SetActive(pair.Key == view);
+            }
+
+            this._activeView = view;
+            this.ViewChanged?.Invoke(view);
+        }
+
+        public void CutTo(CameraViewId view)
+        {
+            SwitchTo(view);
+
+            if (this.brain == null) return;
+
+            this.brain.ResetState();
+        }
+
+        #endregion
+
+        #region Target Assignment
+
+        public void SetTargets(Transform follow, Transform lookAt)
+        {
+            this.followTarget = follow;
+            this.lookAtTarget = lookAt;
+            ApplyTargets();
+        }
+
+        public void SetFollowTarget(Transform follow) => SetTargets(follow, this.lookAtTarget);
+
+        public void SetLookAtTarget(Transform lookAt) => SetTargets(this.followTarget, lookAt);
 
         private void ApplyTargets()
         {
             if (this.followTarget == null) return;
 
             var lookAt = ResolveLookAt();
-            foreach (var pair in this._rigs) pair.Value.SetTargets(this.followTarget, lookAt);
+
+            foreach (var pair in this._rigs)
+            {
+                pair.Value.SetTargets(this.followTarget, lookAt);
+            }
         }
 
         private Transform ResolveLookAt() => this.lookAtTarget != null ? this.lookAtTarget : this.followTarget;
+
+        #endregion
+
+        #region Impulse Shake
+
+        public void Shake(float force)
+        {
+            if (!HasImpulseSource()) return;
+
+            this.impulseSource.GenerateImpulseWithForce(force);
+        }
+
+        public void Shake(Vector3 velocity)
+        {
+            if (!HasImpulseSource()) return;
+
+            this.impulseSource.GenerateImpulseWithVelocity(velocity);
+        }
+
+        private bool HasImpulseSource()
+        {
+            if (this.impulseSource != null) return true;
+
+            Debug.LogWarning($"{nameof(CameraManager)}: no {nameof(CinemachineImpulseSource)} assigned; shake ignored.", this);
+            return false;
+        }
+
+        #endregion
+
+        #region Lens Control
+
+        public void SetFieldOfView(CameraViewId view, float fieldOfView)
+        {
+            if (!TryGetRig(view, out var rig)) return;
+
+            if (rig.VirtualCamera is not CinemachineCamera camera) return;
+
+            camera.Lens.FieldOfView = fieldOfView;
+        }
+
+        public void SetFieldOfView(float fieldOfView) => SetFieldOfView(this._activeView, fieldOfView);
+
+        #endregion
+
+        #region Method
 
         private void ResolveBrain()
         {
@@ -184,13 +242,6 @@ namespace LilyOfValley.Cameras
             Debug.LogError($"{nameof(CameraManager)}: no {nameof(CinemachineBrain)} assigned and none found on the main camera.", this);
         }
 
-        private bool HasImpulseSource()
-        {
-            if (this.impulseSource != null) return true;
-
-            Debug.LogWarning($"{nameof(CameraManager)}: no {nameof(CinemachineImpulseSource)} assigned; shake ignored.", this);
-            return false;
-        }
         #endregion
     }
 }

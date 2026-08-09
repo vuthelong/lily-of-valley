@@ -6,15 +6,27 @@ namespace LilyOfValley.Player
     [RequireComponent(typeof(CharacterController))]
     public sealed class PlayerMotor : MonoBehaviour
     {
-        #region Fields
+        #region Field
+
+        private const float MaxDirectionMagnitudeSquared = 1f;
+        private const float JumpVelocityGravityFactor = -2f;
+
         [SerializeField] private InputReader inputReader;
+
         [SerializeField] private float walkSpeed = 4.5f;
+
         [SerializeField] private float sprintSpeed = 8f;
+
         [SerializeField] private float acceleration = 14f;
+
         [SerializeField] private float jumpHeight = 1.2f;
+
         [SerializeField] private float gravity = -22f;
+
         [SerializeField] private float groundStickForce = -3f;
+
         [SerializeField] private float jumpBufferSeconds = 0.12f;
+
         [SerializeField] private float coyoteSeconds = 0.1f;
 
         private CharacterController _controller;
@@ -22,14 +34,19 @@ namespace LilyOfValley.Player
         private float _verticalVelocity;
         private float _jumpBufferTimer;
         private float _coyoteTimer;
+
         #endregion
 
-        #region Properties
+        #region Property
+
         public bool IsGrounded => this._controller.isGrounded;
+
         public float CurrentSpeed => this._horizontalVelocity.magnitude;
+
         #endregion
 
         #region Unity Lifecycle
+
         private void Awake()
         {
             this._controller = GetComponent<CharacterController>();
@@ -47,13 +64,6 @@ namespace LilyOfValley.Player
             this.inputReader.JumpPressed += OnJumpPressed;
         }
 
-        private void OnDisable()
-        {
-            if (this.inputReader == null) return;
-
-            this.inputReader.JumpPressed -= OnJumpPressed;
-        }
-
         private void Update()
         {
             var deltaTime = Time.deltaTime;
@@ -65,9 +75,18 @@ namespace LilyOfValley.Player
             velocity.y = this._verticalVelocity;
             this._controller.Move(velocity * deltaTime);
         }
+
+        private void OnDisable()
+        {
+            if (this.inputReader == null) return;
+
+            this.inputReader.JumpPressed -= OnJumpPressed;
+        }
+
         #endregion
 
-        #region Private Methods
+        #region Movement
+
         private void UpdateTimers(float deltaTime)
         {
             this._jumpBufferTimer -= deltaTime;
@@ -78,7 +97,7 @@ namespace LilyOfValley.Player
         {
             var input = this.inputReader.MoveInput;
             var direction = (transform.right * input.x) + (transform.forward * input.y);
-            if (direction.sqrMagnitude > 1f) direction.Normalize();
+            if (direction.sqrMagnitude > MaxDirectionMagnitudeSquared) direction.Normalize();
 
             var speed = this.inputReader.IsSprinting ? this.sprintSpeed : this.walkSpeed;
             var target = direction * speed;
@@ -91,17 +110,20 @@ namespace LilyOfValley.Player
 
             if (this._jumpBufferTimer > 0f && this._coyoteTimer > 0f)
             {
-                this._verticalVelocity = Mathf.Sqrt(this.jumpHeight * -2f * this.gravity);
+                this._verticalVelocity = Mathf.Sqrt(this.jumpHeight * JumpVelocityGravityFactor * this.gravity);
                 this._jumpBufferTimer = 0f;
                 this._coyoteTimer = 0f;
             }
 
             this._verticalVelocity += this.gravity * deltaTime;
         }
+
         #endregion
 
-        #region Unity Callbacks
+        #region Method
+
         private void OnJumpPressed() => this._jumpBufferTimer = this.jumpBufferSeconds;
+
         #endregion
     }
 }

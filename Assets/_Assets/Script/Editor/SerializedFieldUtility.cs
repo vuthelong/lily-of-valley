@@ -7,13 +7,7 @@ namespace LilyOfValley.EditorTools
 {
     public static class SerializedFieldUtility
     {
-        #region Public Methods
-        public static void ApplyFields(Object target, Action<SerializedObject> edit)
-        {
-            var serialized = new SerializedObject(target);
-            edit(serialized);
-            serialized.ApplyModifiedPropertiesWithoutUndo();
-        }
+        #region Field Assignment
 
         public static void SetObject(SerializedObject serialized, string fieldName, Object value)
         {
@@ -38,9 +32,18 @@ namespace LilyOfValley.EditorTools
 
             property.intValue = value;
         }
+
         #endregion
 
-        #region Private Methods
+        #region Method
+
+        public static void ApplyFields(Object target, Action<SerializedObject> edit)
+        {
+            var serialized = new SerializedObject(target);
+            edit(serialized);
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
         private static SerializedProperty FindField(SerializedObject serialized, string fieldName)
         {
             var property = serialized.FindProperty(fieldName);
@@ -48,6 +51,7 @@ namespace LilyOfValley.EditorTools
 
             return property;
         }
+
         #endregion
     }
 }

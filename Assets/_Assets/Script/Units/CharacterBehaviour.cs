@@ -8,13 +8,18 @@ namespace LilyOfValley.Units
     /// </summary>
     public abstract class CharacterBehaviour : MonoBehaviour
     {
-        #region Properties
+        #region Property
+
         public Character Owner { get; private set; }
+
         public CharacterModel Model { get; private set; }
+
         public bool IsAttached => Owner != null && Model != null;
+
         #endregion
 
-        #region Public Methods
+        #region Attachment
+
         public void Attach(Character owner)
         {
             if (owner == null || owner.Model == null) return;
@@ -32,12 +37,15 @@ namespace LilyOfValley.Units
             Owner = null;
             Model = null;
         }
+
         #endregion
 
-        #region Private Methods
+        #region Attachment Hook
+
         protected virtual void OnAttached() { }
 
         protected virtual void OnDetached() { }
+
         #endregion
     }
 }

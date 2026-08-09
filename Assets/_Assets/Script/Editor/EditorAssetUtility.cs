@@ -6,7 +6,15 @@ namespace LilyOfValley.EditorTools
 {
     public static class EditorAssetUtility
     {
-        #region Public Methods
+        #region Field
+
+        private const char SystemFolderSeparator = '\\';
+        private const char AssetFolderSeparator = '/';
+
+        #endregion
+
+        #region Method
+
         public static void EnsureFolder(string path)
         {
             if (AssetDatabase.IsValidFolder(path)) return;
@@ -14,7 +22,7 @@ namespace LilyOfValley.EditorTools
             var parent = Path.GetDirectoryName(path);
             if (string.IsNullOrEmpty(parent)) return;
 
-            parent = parent.Replace('\\', '/');
+            parent = parent.Replace(SystemFolderSeparator, AssetFolderSeparator);
             EnsureFolder(parent);
             AssetDatabase.CreateFolder(parent, Path.GetFileName(path));
         }
@@ -26,8 +34,10 @@ namespace LilyOfValley.EditorTools
 
             asset = ScriptableObject.CreateInstance<T>();
             AssetDatabase.CreateAsset(asset, path);
+
             return asset;
         }
+
         #endregion
     }
 }

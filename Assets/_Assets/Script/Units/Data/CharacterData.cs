@@ -7,39 +7,57 @@ namespace LilyOfValley.Units.Data
     [CreateAssetMenu(fileName = "CharacterData", menuName = "Lily of Valley/Units/Character Data")]
     public sealed class CharacterData : ScriptableObject
     {
-        #region Fields
+        #region Field
+
+        private const int MinLevel = 1;
+
         [SerializeField] private int characterId;
+
         [SerializeField] private string displayName = "Character";
+
         [SerializeField] private Character prefab;
 
         [Header("Level")]
         [SerializeField, Min(1)] private int maxLevel = 30;
+
         [SerializeField, Min(1)] private int baseExperienceToLevel = 100;
+
         [SerializeField, Min(1f)] private float experienceGrowth = 1.25f;
 
         [Header("Stats")]
         [SerializeField] private CharacterStatDefinition[] stats;
+
         #endregion
 
-        #region Properties
+        #region Property
+
         public int CharacterId => this.characterId;
+
         public string DisplayName => this.displayName;
+
         public Character Prefab => this.prefab;
+
         public int MaxLevel => this.maxLevel;
+
         public IReadOnlyList<CharacterStatDefinition> Stats => this.stats;
+
         #endregion
 
-        #region Public Methods
-        public int ClampLevel(int level) => Mathf.Clamp(level, 1, this.maxLevel);
+        #region Level Progression
 
-        /// <summary>Experience needed to go from <paramref name="level"/> to the next one, 0 when maxed.</summary>
+        public int ClampLevel(int level) => Mathf.Clamp(level, MinLevel, this.maxLevel);
+
         public int GetExperienceToNextLevel(int level)
         {
             if (level >= this.maxLevel) return 0;
 
-            var steps = Mathf.Max(0, level - 1);
+            var steps = Mathf.Max(0, level - MinLevel);
             return Mathf.CeilToInt(this.baseExperienceToLevel * Mathf.Pow(this.experienceGrowth, steps));
         }
+
+        #endregion
+
+        #region Stat Evaluation
 
         public float GetStatValue(StatType statType, int level)
         {
@@ -55,7 +73,6 @@ namespace LilyOfValley.Units.Data
             return 0f;
         }
 
-        /// <summary>Writes base values for <paramref name="level"/> into the set, keeping active modifiers.</summary>
         public void ApplyTo(StatSet statSet, int level)
         {
             if (statSet == null || this.stats == null) return;
@@ -68,6 +85,7 @@ namespace LilyOfValley.Units.Data
                 statSet.SetBase(definition.Type, definition.Evaluate(level), definition.MaxValue);
             }
         }
+
         #endregion
     }
 }

@@ -8,50 +8,78 @@ namespace LilyOfValley.EditorTools
 {
     public static class UiFactory
     {
-        #region Public Methods
+        #region Field
+
+        private const string LabelFieldName = "label";
+
+        private const string FpsCounterName = "FPS";
+        private const string FpsCounterPlaceholder = "-- FPS";
+        private const float FpsCounterFontSize = 26f;
+
+        private const string ButtonLabelName = "Text";
+        private const float ButtonLabelFontSize = 22f;
+        private const float ButtonHeight = 44f;
+
+        private const float CanvasMatchWidthOrHeight = 0.5f;
+
+        private static readonly Vector2 FpsCounterAnchor = new(1f, 1f);
+        private static readonly Vector2 FpsCounterOffset = new(-32f, -24f);
+        private static readonly Vector2 FpsCounterSize = new(320f, 40f);
+        private static readonly Vector2 CanvasReferenceResolution = new(1920f, 1080f);
+
+        private static readonly Color ButtonBackgroundColor = new(0.20f, 0.23f, 0.30f, 1f);
+
+        #endregion
+
+        #region Widget Creation
+
         public static FpsCounterUI CreateFpsCounter(Transform parent)
         {
-            var text = CreateText("FPS", parent, 26f, TextAlignmentOptions.TopRight);
-            text.text = "-- FPS";
-            AnchorCorner(text.rectTransform, new Vector2(1f, 1f), new Vector2(-32f, -24f), new Vector2(320f, 40f));
+            var text = CreateText(FpsCounterName, parent, FpsCounterFontSize, TextAlignmentOptions.TopRight);
+            text.text = FpsCounterPlaceholder;
+            AnchorCorner(text.rectTransform, FpsCounterAnchor, FpsCounterOffset, FpsCounterSize);
 
             var counter = text.gameObject.AddComponent<FpsCounterUI>();
-            ApplyFields(counter, so => SetObject(so, "label", text));
+            ApplyFields(counter, serialized => SetObject(serialized, LabelFieldName, text));
+
             return counter;
         }
 
         public static Canvas CreateCanvas(string name)
         {
-            var go = new GameObject(name, typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+            var canvasObject = new GameObject(name, typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
 
-            var canvas = go.GetComponent<Canvas>();
+            var canvas = canvasObject.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
 
-            var scaler = go.GetComponent<CanvasScaler>();
+            var scaler = canvasObject.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.matchWidthOrHeight = 0.5f;
+            scaler.referenceResolution = CanvasReferenceResolution;
+            scaler.matchWidthOrHeight = CanvasMatchWidthOrHeight;
+
             return canvas;
         }
 
         public static RectTransform CreateUIObject(string name, Transform parent)
         {
-            var go = new GameObject(name, typeof(RectTransform));
-            go.transform.SetParent(parent, false);
-            return (RectTransform)go.transform;
+            var uiObject = new GameObject(name, typeof(RectTransform));
+            uiObject.transform.SetParent(parent, false);
+
+            return (RectTransform)uiObject.transform;
         }
 
         public static TMP_Text CreateText(string name, Transform parent, float fontSize, TextAlignmentOptions alignment)
         {
-            var go = new GameObject(name, typeof(RectTransform));
-            go.transform.SetParent(parent, false);
+            var textObject = new GameObject(name, typeof(RectTransform));
+            textObject.transform.SetParent(parent, false);
 
-            var text = go.AddComponent<TextMeshProUGUI>();
+            var text = textObject.AddComponent<TextMeshProUGUI>();
             text.fontSize = fontSize;
             text.alignment = alignment;
             text.color = Color.white;
             text.text = name;
             text.raycastTarget = false;
+
             return text;
         }
 
@@ -60,21 +88,27 @@ namespace LilyOfValley.EditorTools
             var root = CreateUIObject(name, parent);
 
             var image = root.gameObject.AddComponent<Image>();
-            image.color = new Color(0.20f, 0.23f, 0.30f, 1f);
+            image.color = ButtonBackgroundColor;
 
             var button = root.gameObject.AddComponent<Button>();
             button.targetGraphic = image;
 
-            if (preferredWidth > 0f) AddLayoutElement(root.gameObject, preferredWidth, 44f);
+            if (preferredWidth > 0f) AddLayoutElement(root.gameObject, preferredWidth, ButtonHeight);
 
-            label = CreateText("Text", root, 22f, TextAlignmentOptions.Center);
+            label = CreateText(ButtonLabelName, root, ButtonLabelFontSize, TextAlignmentOptions.Center);
+
             var rect = label.rectTransform;
             rect.anchorMin = Vector2.zero;
             rect.anchorMax = Vector2.one;
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
+
             return button;
         }
+
+        #endregion
+
+        #region Layout
 
         public static void AddLayoutElement(GameObject target, float preferredWidth, float preferredHeight)
         {
@@ -100,6 +134,7 @@ namespace LilyOfValley.EditorTools
             rect.anchoredPosition = offset;
             rect.sizeDelta = size;
         }
+
         #endregion
     }
 }

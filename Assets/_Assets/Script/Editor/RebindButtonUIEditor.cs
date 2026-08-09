@@ -9,71 +9,132 @@ namespace LilyOfValley.EditorTools
     [CustomEditor(typeof(RebindButtonUI))]
     public sealed class RebindButtonUIEditor : Editor
     {
-        #region Fields
+        #region Field
+
+        private const string ScriptPropertyName = "m_Script";
+        private const string InputReaderPropertyName = "inputReader";
+        private const string ActionMapPropertyName = "actionMapName";
+        private const string ActionPropertyName = "actionName";
+        private const string BindingIndexPropertyName = "bindingIndex";
+
+        private const string ActionMapPopupLabel = "Action Map";
+        private const string ActionPopupLabel = "Action";
+        private const string BindingPopupLabel = "Binding";
+
+        private const string MissingAssetMessage = "Assign an " + nameof(InputReader) + " that holds an " + nameof(InputActionAsset) + " to pick a binding.";
+        private const string CompositeHeadMessage = "This is a composite head and cannot be rebound. Pick one of its parts (up / down / left / right).";
+
+        private const string CompositeLabelPrefix = "[composite] ";
+        private const string PartNameSeparator = ": ";
+        private const string IndexSeparator = " - ";
+        private const char BindingPathSeparator = '/';
+        private const char BindingPathDisplaySeparator = '\\';
+
         private static readonly string[] HandledProperties =
         {
-            "m_Script", "inputReader", "actionMapName", "actionName", "bindingIndex"
+            ScriptPropertyName,
+            InputReaderPropertyName,
+            ActionMapPropertyName,
+            ActionPropertyName,
+            BindingIndexPropertyName
         };
+
         #endregion
 
-        #region Public Methods
+        #region Unity Lifecycle
+
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
 
-            var readerProperty = serializedObject.FindProperty("inputReader");
+            var readerProperty = serializedObject.FindProperty(InputReaderPropertyName);
             EditorGUILayout.PropertyField(readerProperty);
 
-            var reader = readerProperty.objectReferenceValue as InputReader;
-            var asset = reader != null ? reader.Actions : null;
-
-            if (asset == null) EditorGUILayout.HelpBox($"Assign an {nameof(InputReader)} that holds an {nameof(InputActionAsset)} to pick a binding.", MessageType.Info);
-            else DrawBindingSelectors(asset);
-
+            DrawBindingSelectors(readerProperty);
             DrawRemainingProperties();
+
             serializedObject.ApplyModifiedProperties();
         }
+
         #endregion
 
-        #region Private Methods
-        private void DrawBindingSelectors(InputActionAsset asset)
-        {
-            var mapProperty = serializedObject.FindProperty("actionMapName");
-            var actionProperty = serializedObject.FindProperty("actionName");
-            var indexProperty = serializedObject.FindProperty("bindingIndex");
+        #region Drawing
 
+        private void DrawBindingSelectors(SerializedProperty readerProperty)
+        {
+            var reader = readerProperty.objectReferenceValue as InputReader;
+            var asset = reader != null ? reader.Actions : null;
+            if (asset == null)
+            {
+                EditorGUILayout.HelpBox(MissingAssetMessage, MessageType.Info);
+                return;
+            }
+
+            var map = DrawMapPopup(asset);
+            if (map == null) return;
+
+            var action = DrawActionPopup(map);
+            if (action == null) return;
+
+            DrawBindingPopup(action);
+        }
+
+        private InputActionMap DrawMapPopup(InputActionAsset asset)
+        {
             var maps = asset.actionMaps;
-            if (maps.Count == 0) return;
+            if (maps.Count == 0) return null;
 
             var mapNames = new string[maps.Count];
-            for (var i = 0; i < maps.Count; i++) mapNames[i] = maps[i].name;
+            for (var i = 0; i < maps.Count; i++)
+            {
+                mapNames[i] = maps[i].name;
+            }
 
+            var mapProperty = serializedObject.FindProperty(ActionMapPropertyName);
             var mapIndex = Mathf.Max(0, IndexOf(mapNames, mapProperty.stringValue));
-            mapIndex = EditorGUILayout.Popup("Action Map", mapIndex, mapNames);
+            mapIndex = EditorGUILayout.Popup(ActionMapPopupLabel, mapIndex, mapNames);
             mapProperty.stringValue = mapNames[mapIndex];
 
-            var actions = maps[mapIndex].actions;
-            if (actions.Count == 0) return;
+            return maps[mapIndex];
+        }
+
+        private InputAction DrawActionPopup(InputActionMap map)
+        {
+            var actions = map.actions;
+            if (actions.Count == 0) return null;
 
             var actionNames = new string[actions.Count];
-            for (var i = 0; i < actions.Count; i++) actionNames[i] = actions[i].name;
+            for (var i = 0; i < actions.Count; i++)
+            {
+                actionNames[i] = actions[i].name;
+            }
 
+            var actionProperty = serializedObject.FindProperty(ActionPropertyName);
             var actionIndex = Mathf.Max(0, IndexOf(actionNames, actionProperty.stringValue));
-            actionIndex = EditorGUILayout.Popup("Action", actionIndex, actionNames);
+            actionIndex = EditorGUILayout.Popup(ActionPopupLabel, actionIndex, actionNames);
             actionProperty.stringValue = actionNames[actionIndex];
 
-            var action = actions[actionIndex];
-            if (action.bindings.Count == 0) return;
+            return actions[actionIndex];
+        }
 
-            var bindingLabels = new string[action.bindings.Count];
-            for (var i = 0; i < action.bindings.Count; i++) bindingLabels[i] = BuildBindingLabel(action.bindings[i], i);
+        private void DrawBindingPopup(InputAction action)
+        {
+            var bindings = action.bindings;
+            if (bindings.Count == 0) return;
 
+            var bindingLabels = new string[bindings.Count];
+            for (var i = 0; i < bindings.Count; i++)
+            {
+                bindingLabels[i] = BuildBindingLabel(bindings[i], i);
+            }
+
+            var indexProperty = serializedObject.FindProperty(BindingIndexPropertyName);
             var bindingIndex = Mathf.Clamp(indexProperty.intValue, 0, bindingLabels.Length - 1);
-            indexProperty.intValue = EditorGUILayout.Popup("Binding", bindingIndex, bindingLabels);
+            indexProperty.intValue = EditorGUILayout.Popup(BindingPopupLabel, bindingIndex, bindingLabels);
 
-            if (!action.bindings[indexProperty.intValue].isComposite) return;
+            if (!bindings[indexProperty.intValue].isComposite) return;
 
-            EditorGUILayout.HelpBox("This is a composite head and cannot be rebound. Pick one of its parts (up / down / left / right).", MessageType.Warning);
+            EditorGUILayout.HelpBox(CompositeHeadMessage, MessageType.Warning);
         }
 
         private void DrawRemainingProperties()
@@ -95,10 +156,15 @@ namespace LilyOfValley.EditorTools
             var display = binding.isComposite
                 ? binding.name
                 : InputControlPath.ToHumanReadableString(binding.effectivePath, InputControlPath.HumanReadableStringOptions.OmitDevice);
-            var part = binding.isPartOfComposite ? $"{binding.name}: " : string.Empty;
-            var prefix = binding.isComposite ? "[composite] " : string.Empty;
-            return $"{index} - {prefix}{part}{display}".Replace('/', '\\');
+            var part = binding.isPartOfComposite ? binding.name + PartNameSeparator : string.Empty;
+            var prefix = binding.isComposite ? CompositeLabelPrefix : string.Empty;
+
+            return $"{index}{IndexSeparator}{prefix}{part}{display}".Replace(BindingPathSeparator, BindingPathDisplaySeparator);
         }
+
+        #endregion
+
+        #region Name Lookup
 
         private static bool IsHandled(string propertyName)
         {
@@ -119,6 +185,7 @@ namespace LilyOfValley.EditorTools
 
             return -1;
         }
+
         #endregion
     }
 }

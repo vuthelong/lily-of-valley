@@ -7,15 +7,22 @@ namespace LilyOfValley.Inputs
 {
     public static class InputRebindService
     {
-        #region Fields
+        #region Field
+
         private const string OverridesPrefsKey = "lov.input.binding-overrides";
+        private const string PointerPositionControl = "<Pointer>/position";
+        private const string PointerDeltaControl = "<Pointer>/delta";
+        private const string MouseScrollControl = "<Mouse>/scroll";
+        private const string RebindCancelControl = "<Keyboard>/escape";
 
         private static readonly List<InputActionMap> PreviouslyEnabledMaps = new();
 
         public static event Action<InputAction> BindingChanged;
+
         #endregion
 
-        #region Public Methods
+        #region Override Persistence
+
         public static void LoadOverrides(InputActionAsset asset)
         {
             if (asset == null) return;
@@ -53,12 +60,9 @@ namespace LilyOfValley.Inputs
             BindingChanged?.Invoke(action);
         }
 
-        public static string GetDisplayString(InputAction action, int bindingIndex)
-        {
-            if (!IsValidTarget(action, bindingIndex)) return string.Empty;
+        #endregion
 
-            return action.GetBindingDisplayString(bindingIndex);
-        }
+        #region Rebinding
 
         public static InputActionRebindingExtensions.RebindingOperation StartRebind(
             InputAction action,
@@ -83,19 +87,18 @@ namespace LilyOfValley.Inputs
             asset.Disable();
 
             var operation = action.PerformInteractiveRebinding(bindingIndex)
-                                  .WithControlsExcluding("<Pointer>/position")
-                                  .WithControlsExcluding("<Pointer>/delta")
-                                  .WithControlsExcluding("<Mouse>/scroll")
-                                  .WithCancelingThrough("<Keyboard>/escape");
+                                  .WithControlsExcluding(PointerPositionControl)
+                                  .WithControlsExcluding(PointerDeltaControl)
+                                  .WithControlsExcluding(MouseScrollControl)
+                                  .WithCancelingThrough(RebindCancelControl);
 
             operation.OnCancel(op => Finish(op, action, bindingIndex, false, onFinished));
             operation.OnComplete(op => Finish(op, action, bindingIndex, true, onFinished));
             operation.Start();
+
             return operation;
         }
-        #endregion
 
-        #region Private Methods
         private static void Finish(
             InputActionRebindingExtensions.RebindingOperation operation,
             InputAction action,
@@ -123,6 +126,44 @@ namespace LilyOfValley.Inputs
             onFinished?.Invoke(succeeded);
         }
 
+        #endregion
+
+        #region Map State
+
+        private static void CaptureEnabledMaps(InputActionAsset asset)
+        {
+            PreviouslyEnabledMaps.Clear();
+
+            for (var i = 0; i < asset.actionMaps.Count; i++)
+            {
+                var map = asset.actionMaps[i];
+                if (!map.enabled) continue;
+
+                PreviouslyEnabledMaps.Add(map);
+            }
+        }
+
+        private static void RestoreEnabledMaps()
+        {
+            for (var i = 0; i < PreviouslyEnabledMaps.Count; i++)
+            {
+                PreviouslyEnabledMaps[i].Enable();
+            }
+
+            PreviouslyEnabledMaps.Clear();
+        }
+
+        #endregion
+
+        #region Binding Query
+
+        public static string GetDisplayString(InputAction action, int bindingIndex)
+        {
+            if (!IsValidTarget(action, bindingIndex)) return string.Empty;
+
+            return action.GetBindingDisplayString(bindingIndex);
+        }
+
         private static bool HasDuplicate(InputAction action, int bindingIndex)
         {
             var newBinding = action.bindings[bindingIndex];
@@ -132,31 +173,15 @@ namespace LilyOfValley.Inputs
             {
                 var binding = map.bindings[i];
                 if (binding.id == newBinding.id) continue;
+
                 if (binding.isComposite) continue;
+
                 if (binding.effectivePath != newBinding.effectivePath) continue;
 
                 return true;
             }
 
             return false;
-        }
-
-        private static void CaptureEnabledMaps(InputActionAsset asset)
-        {
-            PreviouslyEnabledMaps.Clear();
-
-            for (var i = 0; i < asset.actionMaps.Count; i++)
-            {
-                var map = asset.actionMaps[i];
-                if (map.enabled) PreviouslyEnabledMaps.Add(map);
-            }
-        }
-
-        private static void RestoreEnabledMaps()
-        {
-            for (var i = 0; i < PreviouslyEnabledMaps.Count; i++) PreviouslyEnabledMaps[i].Enable();
-
-            PreviouslyEnabledMaps.Clear();
         }
 
         private static bool IsValidTarget(InputAction action, int bindingIndex)
@@ -172,6 +197,7 @@ namespace LilyOfValley.Inputs
             Debug.LogError($"{nameof(InputRebindService)}: binding index {bindingIndex} is out of range for '{action.name}'.");
             return false;
         }
+
         #endregion
     }
 }

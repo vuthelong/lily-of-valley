@@ -6,18 +6,26 @@ namespace LilyOfValley.Player
 {
     public sealed class PlayerLook : MonoBehaviour
     {
-        #region Fields
+        #region Field
+
         [SerializeField] private InputReader inputReader;
+
         [SerializeField] private Transform cameraPivot;
+
         [SerializeField] private float sensitivity = 0.08f;
+
         [SerializeField] private float minPitch = -85f;
+
         [SerializeField] private float maxPitch = 85f;
+
         [SerializeField] private bool invertY;
 
         private float _pitch;
+
         #endregion
 
         #region Unity Lifecycle
+
         private void Awake()
         {
             if (this.inputReader != null && this.cameraPivot != null) return;
@@ -39,6 +47,7 @@ namespace LilyOfValley.Player
             this._pitch = Mathf.Clamp(this._pitch, this.minPitch, this.maxPitch);
             this.cameraPivot.localRotation = Quaternion.Euler(this._pitch, 0f, 0f);
         }
+
         #endregion
     }
 }

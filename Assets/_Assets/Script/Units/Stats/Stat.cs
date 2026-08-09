@@ -5,27 +5,40 @@ namespace LilyOfValley.Units.Stats
 {
     public sealed class Stat
     {
-        #region Fields
-        public event Action<Stat> Changed;
+        #region Field
+
+        private const float NoModifierAmount = 0f;
+        private const float NeutralBonus = 0f;
+        private const float NeutralMultiplier = 1f;
+        private const float DefaultMinValue = 0f;
+        private const float UnlimitedMaxValue = float.MaxValue;
 
         private float _baseValue;
         private float _baseBonus;
-        private float _baseMultiply = 1f;
+        private float _baseMultiply = NeutralMultiplier;
         private float _totalBonus;
-        private float _totalMultiply = 1f;
+        private float _totalMultiply = NeutralMultiplier;
         private float _minValue;
-        private float _maxValue = float.MaxValue;
+        private float _maxValue = UnlimitedMaxValue;
         private float _value;
+
+        public event Action<Stat> Changed;
+
         #endregion
 
-        #region Properties
+        #region Property
+
         public StatType Type { get; }
+
         public float BaseValue => this._baseValue;
+
         public float Value => this._value;
+
         #endregion
 
-        #region Public Methods
-        public Stat(StatType type, float baseValue, float minValue = 0f, float maxValue = float.MaxValue)
+        #region Configuration
+
+        public Stat(StatType type, float baseValue, float minValue = DefaultMinValue, float maxValue = UnlimitedMaxValue)
         {
             Type = type;
             this._baseValue = baseValue;
@@ -49,10 +62,13 @@ namespace LilyOfValley.Units.Stats
             Recalculate();
         }
 
-        /// <summary>Applies a modifier. Pass a negative amount to remove one.</summary>
+        #endregion
+
+        #region Modification
+
         public void Modify(float amount, StatModifyType modifyType)
         {
-            if (Mathf.Approximately(amount, 0f)) return;
+            if (Mathf.Approximately(amount, NoModifierAmount)) return;
 
             switch (modifyType)
             {
@@ -76,7 +92,6 @@ namespace LilyOfValley.Units.Stats
             Recalculate();
         }
 
-        /// <summary>What <see cref="Value"/> would become, without applying the modifier.</summary>
         public float Preview(float amount, StatModifyType modifyType)
         {
             var baseBonus = this._baseBonus;
@@ -108,17 +123,17 @@ namespace LilyOfValley.Units.Stats
 
         public void ResetModifiers()
         {
-            this._baseBonus = 0f;
-            this._baseMultiply = 1f;
-            this._totalBonus = 0f;
-            this._totalMultiply = 1f;
+            this._baseBonus = NeutralBonus;
+            this._baseMultiply = NeutralMultiplier;
+            this._totalBonus = NeutralBonus;
+            this._totalMultiply = NeutralMultiplier;
             Recalculate();
         }
 
-        public void ClearSubscribers() => Changed = null;
         #endregion
 
-        #region Private Methods
+        #region Calculation
+
         private void Recalculate()
         {
             var value = Clamp(Compute(this._baseValue, this._baseBonus, this._baseMultiply, this._totalBonus, this._totalMultiply));
@@ -134,6 +149,13 @@ namespace LilyOfValley.Units.Stats
         {
             return (((baseValue + baseBonus) * baseMultiply) + totalBonus) * totalMultiply;
         }
+
+        #endregion
+
+        #region Method
+
+        public void ClearSubscribers() => Changed = null;
+
         #endregion
     }
 }

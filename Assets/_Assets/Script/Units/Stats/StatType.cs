@@ -15,13 +15,13 @@ namespace LilyOfValley.Units.Stats
         LifeSteal = 10,
         CooldownReduction = 11,
 
-        // Keep last: sizes the stat array.
         Count = 12
     }
 
     public static class StatTypeExtensions
     {
-        #region Public Methods
+        #region Method
+
         public static bool IsPercent(this StatType statType) => statType switch
         {
             StatType.CritChance => true,
@@ -30,6 +30,7 @@ namespace LilyOfValley.Units.Stats
             StatType.CooldownReduction => true,
             _ => false
         };
+
         #endregion
     }
 }

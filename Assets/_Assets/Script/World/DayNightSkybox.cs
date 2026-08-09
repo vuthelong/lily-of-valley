@@ -4,23 +4,31 @@ namespace LilyOfValley.World
 {
     public sealed class DayNightSkybox : MonoBehaviour
     {
-        #region Fields
+        #region Field
+
+        private const float FullRotationDegrees = 360f;
+
         private static readonly int BlendId = Shader.PropertyToID("_Blend");
         private static readonly int ExposureId = Shader.PropertyToID("_Exposure");
         private static readonly int RotationId = Shader.PropertyToID("_Rotation");
 
         [SerializeField] private DayNightCycle cycle;
+
         [SerializeField] private Material skyboxTemplate;
+
         [SerializeField] private float rotationDegreesPerSecond = 0.4f;
+
         [SerializeField, Min(0f)] private float environmentRefreshSeconds = 2f;
 
         private Material _runtimeSkybox;
         private Material _previousSkybox;
         private float _rotation;
         private float _refreshTimer;
+
         #endregion
 
         #region Unity Lifecycle
+
         private void Awake()
         {
             if (this.cycle == null || this.skyboxTemplate == null)
@@ -46,7 +54,7 @@ namespace LilyOfValley.World
 
         private void Update()
         {
-            this._rotation = Mathf.Repeat(this._rotation + (this.rotationDegreesPerSecond * Time.deltaTime), 360f);
+            this._rotation = Mathf.Repeat(this._rotation + (this.rotationDegreesPerSecond * Time.deltaTime), FullRotationDegrees);
             this._runtimeSkybox.SetFloat(RotationId, this._rotation);
 
             if (this.environmentRefreshSeconds <= 0f) return;
@@ -73,9 +81,11 @@ namespace LilyOfValley.World
 
             Destroy(this._runtimeSkybox);
         }
+
         #endregion
 
-        #region Private Methods
+        #region Method
+
         private void Apply(float normalizedTime)
         {
             var preset = this.cycle.Preset;
@@ -84,10 +94,9 @@ namespace LilyOfValley.World
             this._runtimeSkybox.SetFloat(BlendId, preset.EvaluateSkyBlend(normalizedTime));
             this._runtimeSkybox.SetFloat(ExposureId, preset.EvaluateSkyExposure(normalizedTime));
         }
-        #endregion
 
-        #region Unity Callbacks
         private void OnTimeChanged(float normalizedTime) => Apply(normalizedTime);
+
         #endregion
     }
 }

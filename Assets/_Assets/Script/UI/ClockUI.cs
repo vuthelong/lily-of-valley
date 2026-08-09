@@ -6,15 +6,22 @@ namespace LilyOfValley.UI
 {
     public sealed class ClockUI : MonoBehaviour
     {
-        #region Fields
+        #region Field
+
+        private const int UnsetMinute = -1;
+
         [SerializeField] private DayNightCycle cycle;
+
         [SerializeField] private TMP_Text label;
+
         [SerializeField] private string format = "Day {0}  {1:00}:{2:00}  ({3})";
 
-        private int _lastMinute = -1;
+        private int _lastMinute = UnsetMinute;
+
         #endregion
 
         #region Unity Lifecycle
+
         private void Awake()
         {
             if (this.cycle != null && this.label != null) return;
@@ -26,14 +33,16 @@ namespace LilyOfValley.UI
         private void OnEnable()
         {
             this.cycle.TimeChanged += OnTimeChanged;
-            this._lastMinute = -1;
+            this._lastMinute = UnsetMinute;
             Refresh();
         }
 
         private void OnDisable() => this.cycle.TimeChanged -= OnTimeChanged;
+
         #endregion
 
-        #region Private Methods
+        #region Method
+
         private void Refresh()
         {
             var minute = this.cycle.Minute;
@@ -42,10 +51,9 @@ namespace LilyOfValley.UI
             this._lastMinute = minute;
             this.label.text = string.Format(this.format, this.cycle.Day, Mathf.FloorToInt(this.cycle.Hour), minute, this.cycle.Phase);
         }
-        #endregion
 
-        #region Unity Callbacks
         private void OnTimeChanged(float normalizedTime) => Refresh();
+
         #endregion
     }
 }

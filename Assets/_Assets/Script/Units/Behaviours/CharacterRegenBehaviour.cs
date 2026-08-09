@@ -3,16 +3,20 @@ using UnityEngine;
 
 namespace LilyOfValley.Units.Behaviours
 {
-    /// <summary>Reference implementation of a ticking behaviour: heals by the HealthRegen stat.</summary>
     public sealed class CharacterRegenBehaviour : CharacterBehaviour, ICharacterTick
     {
-        #region Fields
-        [SerializeField, Min(0.05f)] private float tickInterval = 1f;
+        #region Field
+
+        private const float MinTickInterval = 0.05f;
+
+        [SerializeField, Min(MinTickInterval)] private float tickInterval = 1f;
 
         private float _timer;
+
         #endregion
 
-        #region Public Methods
+        #region Method
+
         public void Tick(float deltaTime)
         {
             if (!IsAttached || !Model.IsAlive) return;
@@ -25,10 +29,9 @@ namespace LilyOfValley.Units.Behaviours
 
             this._timer = 0f;
         }
-        #endregion
 
-        #region Private Methods
         protected override void OnAttached() => this._timer = 0f;
+
         #endregion
     }
 }

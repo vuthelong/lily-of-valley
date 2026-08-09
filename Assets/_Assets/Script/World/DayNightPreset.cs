@@ -5,32 +5,61 @@ namespace LilyOfValley.World
     [CreateAssetMenu(fileName = "DayNightPreset", menuName = "Lily of Valley/World/Day Night Preset")]
     public sealed class DayNightPreset : ScriptableObject
     {
-        #region Fields
+        #region Field
+
         public const float HoursPerDay = 24f;
+
+        private const float OpaqueAlpha = 1f;
+        private const float GradientStartTime = 0f;
+        private const float GradientEndTime = 1f;
+
+        private const string ApplyDefaultsMenu = "Apply Defaults";
 
         [Header("Sun")]
         [SerializeField] private Gradient sunColor = new();
+
         [SerializeField] private AnimationCurve sunIntensity = AnimationCurve.Linear(0f, 1f, 1f, 1f);
 
         [Header("Moon")]
         [SerializeField] private Gradient moonColor = new();
+
         [SerializeField] private AnimationCurve moonIntensity = AnimationCurve.Linear(0f, 0f, 1f, 0f);
 
         [Header("Environment")]
         [SerializeField] private Gradient ambientColor = new();
+
         [SerializeField] private Gradient fogColor = new();
+
         [SerializeField] private AnimationCurve fogDensity = AnimationCurve.Linear(0f, 0.005f, 1f, 0.005f);
+
         [SerializeField] private AnimationCurve skyBlend = AnimationCurve.Linear(0f, 0f, 1f, 1f);
+
         [SerializeField] private AnimationCurve skyExposure = AnimationCurve.Linear(0f, 1f, 1f, 1f);
 
         [Header("Phase boundaries (hours)")]
         [SerializeField, Range(0f, HoursPerDay)] private float dawnStartHour = 5f;
+
         [SerializeField, Range(0f, HoursPerDay)] private float dayStartHour = 8f;
+
         [SerializeField, Range(0f, HoursPerDay)] private float duskStartHour = 17f;
+
         [SerializeField, Range(0f, HoursPerDay)] private float nightStartHour = 20f;
+
         #endregion
 
-        #region Public Methods
+        #region Unity Lifecycle
+
+        private void OnValidate()
+        {
+            this.dayStartHour = Mathf.Max(this.dayStartHour, this.dawnStartHour);
+            this.duskStartHour = Mathf.Max(this.duskStartHour, this.dayStartHour);
+            this.nightStartHour = Mathf.Max(this.nightStartHour, this.duskStartHour);
+        }
+
+        #endregion
+
+        #region Evaluation
+
         public Color EvaluateSunColor(float normalizedTime) => this.sunColor.Evaluate(normalizedTime);
 
         public float EvaluateSunIntensity(float normalizedTime) => Mathf.Max(0f, this.sunIntensity.Evaluate(normalizedTime));
@@ -52,13 +81,19 @@ namespace LilyOfValley.World
         public DayPhase EvaluatePhase(float hour)
         {
             if (hour >= this.nightStartHour || hour < this.dawnStartHour) return DayPhase.Night;
+
             if (hour < this.dayStartHour) return DayPhase.Dawn;
+
             if (hour < this.duskStartHour) return DayPhase.Day;
 
             return DayPhase.Dusk;
         }
 
-        [ContextMenu("Apply Defaults")]
+        #endregion
+
+        #region Default Setup
+
+        [ContextMenu(ApplyDefaultsMenu)]
         public void ApplyDefaults()
         {
             this.sunColor = CreateGradient(
@@ -141,28 +176,28 @@ namespace LilyOfValley.World
                 new Keyframe(0.75f, 0.8f),
                 new Keyframe(1f, 0.55f));
         }
-        #endregion
 
-        #region Private Methods
         private static Gradient CreateGradient(float[] times, Color[] colors)
         {
             var gradient = new Gradient();
             var colorKeys = new GradientColorKey[colors.Length];
-            for (var i = 0; i < colors.Length; i++) colorKeys[i] = new GradientColorKey(colors[i], times[i]);
 
-            var alphaKeys = new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(1f, 1f) };
+            for (var i = 0; i < colors.Length; i++)
+            {
+                colorKeys[i] = new GradientColorKey(colors[i], times[i]);
+            }
+
+            var alphaKeys = new[]
+            {
+                new GradientAlphaKey(OpaqueAlpha, GradientStartTime),
+                new GradientAlphaKey(OpaqueAlpha, GradientEndTime)
+            };
+
             gradient.SetKeys(colorKeys, alphaKeys);
+
             return gradient;
         }
-        #endregion
 
-        #region Unity Callbacks
-        private void OnValidate()
-        {
-            this.dayStartHour = Mathf.Max(this.dayStartHour, this.dawnStartHour);
-            this.duskStartHour = Mathf.Max(this.duskStartHour, this.dayStartHour);
-            this.nightStartHour = Mathf.Max(this.nightStartHour, this.duskStartHour);
-        }
         #endregion
     }
 }

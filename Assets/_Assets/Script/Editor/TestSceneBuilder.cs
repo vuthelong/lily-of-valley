@@ -12,7 +12,11 @@ namespace LilyOfValley.EditorTools
 {
     public static class TestSceneBuilder
     {
-        #region Fields
+        #region Field
+
+        private const string MenuPath = "Tools/Lily of Valley/3 - Populate Test Scene";
+        private const int MenuPriority = 12;
+
         private const string TestScenePath = "Assets/Scenes/TestScene.unity";
         private const string GroundName = "Ground";
         private const string PlayerName = "Player";
@@ -20,41 +24,26 @@ namespace LilyOfValley.EditorTools
         private const string SystemsName = "Game Systems";
         private const string HudName = "HUD";
 
+        private const string CreateGroundUndoName = "Create Ground";
+        private const string CreatePlayerUndoName = "Create Player";
+        private const string CreateSystemsUndoName = "Create Game Systems";
+        private const string CreateHudUndoName = "Create HUD";
+
+        private const string InputReaderFieldName = "inputReader";
+        private const string CameraPivotFieldName = "cameraPivot";
+
         private const float CapsuleHeight = 2f;
         private const float CapsuleRadius = 0.5f;
+        private const float CapsuleHalfHeight = CapsuleHeight * 0.5f;
+        private const float GroundClearance = 0.05f;
+        private const float PivotHeight = 0.6f;
+        private const float SlopeLimit = 50f;
+        private const float StepOffset = 0.35f;
+
         #endregion
 
-        #region Public Methods
-        [MenuItem("Tools/Lily of Valley/3 - Populate Test Scene", priority = 12)]
-        public static void PopulateTestScene()
-        {
-            var scene = SceneManager.GetActiveScene();
-            if (scene.path != TestScenePath)
-            {
-                if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+        #region Scene Content
 
-                scene = EditorSceneManager.OpenScene(TestScenePath, OpenSceneMode.Single);
-            }
-
-            var reader = GameScaffolder.EnsureInputReader();
-            if (reader == null)
-            {
-                Debug.LogError($"{nameof(TestSceneBuilder)}: could not resolve an {nameof(InputReader)}; aborting.");
-                return;
-            }
-
-            CreateGround(scene);
-            EnsureCameraSystem(EnsurePlayer(scene, reader));
-            EnsureBootstrap(reader);
-            EnsureHud(scene);
-
-            EditorSceneManager.MarkSceneDirty(scene);
-            EditorSceneManager.SaveScene(scene);
-            Debug.Log($"{nameof(TestSceneBuilder)}: '{TestScenePath}' updated.");
-        }
-        #endregion
-
-        #region Private Methods
         private static void CreateGround(Scene scene)
         {
             var existing = FindRoot(scene, GroundName);
@@ -66,7 +55,7 @@ namespace LilyOfValley.EditorTools
             }
 
             var ground = GroundGridFactory.CreateGround(GroundName);
-            Undo.RegisterCreatedObjectUndo(ground, "Create Ground");
+            Undo.RegisterCreatedObjectUndo(ground, CreateGroundUndoName);
         }
 
         private static GameObject EnsurePlayer(Scene scene, InputReader reader)
@@ -78,32 +67,39 @@ namespace LilyOfValley.EditorTools
                 return existing;
             }
 
+            var player = CreatePlayerBody();
+
+            var pivot = new GameObject(PivotName);
+            pivot.transform.SetParent(player.transform, false);
+            pivot.transform.localPosition = new Vector3(0f, PivotHeight, 0f);
+
+            var motor = player.AddComponent<PlayerMotor>();
+            ApplyFields(motor, serialized => SetObject(serialized, InputReaderFieldName, reader));
+
+            var look = player.AddComponent<PlayerLook>();
+            ApplyFields(look, serialized =>
+            {
+                SetObject(serialized, InputReaderFieldName, reader);
+                SetObject(serialized, CameraPivotFieldName, pivot.transform);
+            });
+
+            return player;
+        }
+
+        private static GameObject CreatePlayerBody()
+        {
             var player = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             player.name = PlayerName;
-            player.transform.position = new Vector3(0f, CapsuleHeight * 0.5f + 0.05f, 0f);
+            player.transform.position = new Vector3(0f, CapsuleHalfHeight + GroundClearance, 0f);
             Object.DestroyImmediate(player.GetComponent<CapsuleCollider>());
-            Undo.RegisterCreatedObjectUndo(player, "Create Player");
+            Undo.RegisterCreatedObjectUndo(player, CreatePlayerUndoName);
 
             var controller = player.AddComponent<CharacterController>();
             controller.height = CapsuleHeight;
             controller.radius = CapsuleRadius;
             controller.center = Vector3.zero;
-            controller.slopeLimit = 50f;
-            controller.stepOffset = 0.35f;
-
-            var pivot = new GameObject(PivotName);
-            pivot.transform.SetParent(player.transform, false);
-            pivot.transform.localPosition = new Vector3(0f, 0.6f, 0f);
-
-            var motor = player.AddComponent<PlayerMotor>();
-            ApplyFields(motor, so => SetObject(so, "inputReader", reader));
-
-            var look = player.AddComponent<PlayerLook>();
-            ApplyFields(look, so =>
-            {
-                SetObject(so, "inputReader", reader);
-                SetObject(so, "cameraPivot", pivot.transform);
-            });
+            controller.slopeLimit = SlopeLimit;
+            controller.stepOffset = StepOffset;
 
             return player;
         }
@@ -130,10 +126,10 @@ namespace LilyOfValley.EditorTools
             }
 
             var systems = new GameObject(SystemsName);
-            Undo.RegisterCreatedObjectUndo(systems, "Create Game Systems");
+            Undo.RegisterCreatedObjectUndo(systems, CreateSystemsUndoName);
 
             var bootstrap = systems.AddComponent<GameBootstrap>();
-            ApplyFields(bootstrap, so => SetObject(so, "inputReader", reader));
+            ApplyFields(bootstrap, serialized => SetObject(serialized, InputReaderFieldName, reader));
         }
 
         private static void EnsureHud(Scene scene)
@@ -148,10 +144,42 @@ namespace LilyOfValley.EditorTools
             if (hud == null)
             {
                 hud = UiFactory.CreateCanvas(HudName).gameObject;
-                Undo.RegisterCreatedObjectUndo(hud, "Create HUD");
+                Undo.RegisterCreatedObjectUndo(hud, CreateHudUndoName);
             }
 
             UiFactory.CreateFpsCounter(hud.transform);
+        }
+
+        #endregion
+
+        #region Method
+
+        [MenuItem(MenuPath, priority = MenuPriority)]
+        public static void PopulateTestScene()
+        {
+            var scene = SceneManager.GetActiveScene();
+            if (scene.path != TestScenePath)
+            {
+                if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+
+                scene = EditorSceneManager.OpenScene(TestScenePath, OpenSceneMode.Single);
+            }
+
+            var reader = GameScaffolder.EnsureInputReader();
+            if (reader == null)
+            {
+                Debug.LogError($"{nameof(TestSceneBuilder)}: could not resolve an {nameof(InputReader)}; aborting.");
+                return;
+            }
+
+            CreateGround(scene);
+            EnsureCameraSystem(EnsurePlayer(scene, reader));
+            EnsureBootstrap(reader);
+            EnsureHud(scene);
+
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            Debug.Log($"{nameof(TestSceneBuilder)}: '{TestScenePath}' updated.");
         }
 
         private static GameObject FindRoot(Scene scene, string name)
@@ -164,6 +192,7 @@ namespace LilyOfValley.EditorTools
 
             return null;
         }
+
         #endregion
     }
 }

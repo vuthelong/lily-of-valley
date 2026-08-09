@@ -3,16 +3,23 @@ using UnityEngine;
 
 namespace LilyOfValley.Core
 {
-    [DefaultExecutionOrder(-100)]
+    [DefaultExecutionOrder(BootstrapExecutionOrder)]
     public sealed class GameBootstrap : MonoBehaviour
     {
-        #region Fields
+        #region Field
+
+        private const int BootstrapExecutionOrder = -100;
+
         [SerializeField] private InputReader inputReader;
+
         [SerializeField] private bool lockCursorOnStart = true;
+
         [SerializeField] private bool keepAliveBetweenScenes;
+
         #endregion
 
         #region Unity Lifecycle
+
         private void Awake()
         {
             if (this.inputReader == null)
@@ -41,6 +48,7 @@ namespace LilyOfValley.Core
 
             this.inputReader.DisableAll();
         }
+
         #endregion
     }
 }

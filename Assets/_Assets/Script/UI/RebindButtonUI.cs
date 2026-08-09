@@ -9,30 +9,45 @@ namespace LilyOfValley.UI
 {
     public sealed class RebindButtonUI : MonoBehaviour
     {
-        #region Fields
-        public event Action<RebindButtonUI> RebindStarted;
-        public event Action<RebindButtonUI> RebindFinished;
+        #region Field
 
         [SerializeField] private InputReader inputReader;
+
         [SerializeField] private string actionMapName = InputReader.PlayerMapName;
+
         [SerializeField] private string actionName = InputReader.MoveActionName;
+
         [SerializeField] private int bindingIndex;
+
         [SerializeField] private string displayTitle;
+
         [SerializeField] private TMP_Text titleLabel;
+
         [SerializeField] private TMP_Text bindingLabel;
+
         [SerializeField] private Button rebindButton;
+
         [SerializeField] private Button resetButton;
+
         [SerializeField] private string waitingText = "< press a key >";
 
         private InputAction _action;
         private InputActionRebindingExtensions.RebindingOperation _operation;
+
+        public event Action<RebindButtonUI> RebindStarted;
+
+        public event Action<RebindButtonUI> RebindFinished;
+
         #endregion
 
-        #region Properties
+        #region Property
+
         public bool IsRebinding => this._operation != null;
+
         #endregion
 
         #region Unity Lifecycle
+
         private void Awake()
         {
             if (!Resolve())
@@ -62,26 +77,11 @@ namespace LilyOfValley.UI
 
             InputRebindService.BindingChanged -= OnBindingChanged;
         }
+
         #endregion
 
-        #region Public Methods
-        public void Refresh()
-        {
-            if (this.bindingLabel == null || this._action == null) return;
+        #region Action Setup
 
-            this.bindingLabel.text = InputRebindService.GetDisplayString(this._action, this.bindingIndex);
-        }
-
-        public void CancelRebind()
-        {
-            if (this._operation == null) return;
-
-            this._operation.Cancel();
-            this._operation = null;
-        }
-        #endregion
-
-        #region Private Methods
         private bool Resolve()
         {
             if (this.inputReader == null)
@@ -105,10 +105,23 @@ namespace LilyOfValley.UI
         private string BuildTitle()
         {
             if (!string.IsNullOrEmpty(this.displayTitle)) return this.displayTitle;
+
             if (this.bindingIndex < 0 || this.bindingIndex >= this._action.bindings.Count) return this._action.name;
 
             var binding = this._action.bindings[this.bindingIndex];
+
             return string.IsNullOrEmpty(binding.name) ? this._action.name : $"{this._action.name} {binding.name}";
+        }
+
+        #endregion
+
+        #region Display
+
+        public void Refresh()
+        {
+            if (this.bindingLabel == null || this._action == null) return;
+
+            this.bindingLabel.text = InputRebindService.GetDisplayString(this._action, this.bindingIndex);
         }
 
         private void SetInteractable(bool interactable)
@@ -116,9 +129,26 @@ namespace LilyOfValley.UI
             if (this.rebindButton != null) this.rebindButton.interactable = interactable;
             if (this.resetButton != null) this.resetButton.interactable = interactable;
         }
+
+        private void OnBindingChanged(InputAction action)
+        {
+            if (action != null && action != this._action) return;
+
+            Refresh();
+        }
+
         #endregion
 
-        #region Unity Callbacks
+        #region Rebind Flow
+
+        public void CancelRebind()
+        {
+            if (this._operation == null) return;
+
+            this._operation.Cancel();
+            this._operation = null;
+        }
+
         private void OnRebindClicked()
         {
             if (this._action == null || this._operation != null) return;
@@ -146,12 +176,6 @@ namespace LilyOfValley.UI
             InputRebindService.ResetBinding(this._action, this.bindingIndex);
         }
 
-        private void OnBindingChanged(InputAction action)
-        {
-            if (action != null && action != this._action) return;
-
-            Refresh();
-        }
         #endregion
     }
 }

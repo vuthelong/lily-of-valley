@@ -6,21 +6,29 @@ namespace LilyOfValley.Cameras
     [RequireComponent(typeof(CinemachineVirtualCameraBase))]
     public sealed class CameraRig : MonoBehaviour
     {
-        #region Fields
+        #region Field
+
         public const int ActivePriority = 20;
         public const int IdlePriority = 0;
 
         [SerializeField] private CameraViewId id = CameraViewId.ThirdPerson;
+
         [SerializeField] private CinemachineVirtualCameraBase virtualCamera;
+
         #endregion
 
-        #region Properties
+        #region Property
+
         public CameraViewId Id => this.id;
+
         public CinemachineVirtualCameraBase VirtualCamera => this.virtualCamera;
+
         public bool IsActive => this.virtualCamera != null && this.virtualCamera.Priority.Value >= ActivePriority;
+
         #endregion
 
         #region Unity Lifecycle
+
         private void Awake()
         {
             if (this.virtualCamera == null) TryGetComponent(out this.virtualCamera);
@@ -33,9 +41,11 @@ namespace LilyOfValley.Cameras
         private void OnEnable() => CameraManager.Register(this);
 
         private void OnDisable() => CameraManager.Unregister(this);
+
         #endregion
 
-        #region Public Methods
+        #region Method
+
         public void SetActive(bool active)
         {
             if (this.virtualCamera == null) return;
@@ -50,6 +60,7 @@ namespace LilyOfValley.Cameras
             this.virtualCamera.Follow = follow;
             this.virtualCamera.LookAt = lookAt;
         }
+
         #endregion
     }
 }

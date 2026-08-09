@@ -10,17 +10,32 @@ namespace LilyOfValley.EditorTools
 {
     public static class CameraRigFactory
     {
-        #region Fields
+        #region Field
+
         private const string SystemName = "Camera System";
         private const string MainCameraName = "Main Camera";
+        private const string MainCameraTag = "MainCamera";
         private const string ThirdPersonRigName = "CM Third Person";
         private const string FirstPersonRigName = "CM First Person";
 
+        private const string CreateSystemUndoName = "Create Camera System";
+        private const string CreateMainCameraUndoName = "Create Main Camera";
+        private const string DetachMainCameraUndoName = "Detach Main Camera";
+
+        private const string ViewIdFieldName = "id";
+        private const string VirtualCameraFieldName = "virtualCamera";
+        private const string BrainFieldName = "brain";
+        private const string ImpulseSourceFieldName = "impulseSource";
+        private const string FollowTargetFieldName = "followTarget";
+        private const string LookAtTargetFieldName = "lookAtTarget";
+
         private static readonly Vector3 ThirdPersonOffset = new(0f, 0.6f, -5f);
         private static readonly Vector3 ThirdPersonDamping = Vector3.one * 0.15f;
+
         #endregion
 
-        #region Public Methods
+        #region Camera System
+
         public static CameraManager EnsureCameraSystem(Transform followTarget)
         {
             var camera = EnsureBrainCamera();
@@ -37,39 +52,41 @@ namespace LilyOfValley.EditorTools
             }
 
             var system = new GameObject(SystemName);
-            Undo.RegisterCreatedObjectUndo(system, "Create Camera System");
+            Undo.RegisterCreatedObjectUndo(system, CreateSystemUndoName);
 
             var impulseSource = system.AddComponent<CinemachineImpulseSource>();
             manager = system.AddComponent<CameraManager>();
 
-            CreateRig(system.transform, ThirdPersonRigName, CameraViewId.ThirdPerson, ThirdPersonOffset, ThirdPersonDamping, true);
-            CreateRig(system.transform, FirstPersonRigName, CameraViewId.FirstPerson, Vector3.zero, Vector3.zero, false);
+            CreateRig<CinemachineHardLookAt>(system.transform, ThirdPersonRigName, CameraViewId.ThirdPerson, ThirdPersonOffset, ThirdPersonDamping);
+            CreateRig<CinemachineRotateWithFollowTarget>(system.transform, FirstPersonRigName, CameraViewId.FirstPerson, Vector3.zero, Vector3.zero);
 
             Wire(manager, brain, impulseSource, followTarget);
+
             return manager;
         }
-        #endregion
 
-        #region Private Methods
         private static Camera EnsureBrainCamera()
         {
             var camera = Camera.main;
             if (camera == null)
             {
-                var go = new GameObject(MainCameraName, typeof(Camera), typeof(AudioListener)) { tag = "MainCamera" };
-                Undo.RegisterCreatedObjectUndo(go, "Create Main Camera");
+                var go = new GameObject(MainCameraName, typeof(Camera), typeof(AudioListener)) { tag = MainCameraTag };
+                Undo.RegisterCreatedObjectUndo(go, CreateMainCameraUndoName);
                 camera = go.GetComponent<Camera>();
             }
 
-            // The brain drives the camera transform, so it must not be parented to the player rig.
-            if (camera.transform.parent != null) Undo.SetTransformParent(camera.transform, null, "Detach Main Camera");
+            if (camera.transform.parent != null) Undo.SetTransformParent(camera.transform, null, DetachMainCameraUndoName);
 
             if (!camera.TryGetComponent<CinemachineBrain>(out _)) Undo.AddComponent<CinemachineBrain>(camera.gameObject);
 
             return camera;
         }
 
-        private static void CreateRig(Transform parent, string name, CameraViewId id, Vector3 offset, Vector3 damping, bool lookAtTarget)
+        #endregion
+
+        #region Rig Assembly
+
+        private static void CreateRig<TAim>(Transform parent, string name, CameraViewId id, Vector3 offset, Vector3 damping) where TAim : Component
         {
             var go = new GameObject(name);
             go.transform.SetParent(parent, false);
@@ -82,16 +99,14 @@ namespace LilyOfValley.EditorTools
             follow.TrackerSettings.BindingMode = BindingMode.LockToTarget;
             follow.TrackerSettings.PositionDamping = damping;
 
-            if (lookAtTarget) go.AddComponent<CinemachineHardLookAt>();
-            else go.AddComponent<CinemachineRotateWithFollowTarget>();
-
+            go.AddComponent<TAim>();
             go.AddComponent<CinemachineImpulseListener>();
 
             var rig = go.AddComponent<CameraRig>();
             ApplyFields(rig, so =>
             {
-                SetInt(so, "id", (int)id);
-                SetObject(so, "virtualCamera", virtualCamera);
+                SetInt(so, ViewIdFieldName, (int)id);
+                SetObject(so, VirtualCameraFieldName, virtualCamera);
             });
         }
 
@@ -99,14 +114,17 @@ namespace LilyOfValley.EditorTools
         {
             ApplyFields(manager, so =>
             {
-                if (brain != null) SetObject(so, "brain", brain);
-                if (impulseSource != null) SetObject(so, "impulseSource", impulseSource);
+                if (brain != null) SetObject(so, BrainFieldName, brain);
+
+                if (impulseSource != null) SetObject(so, ImpulseSourceFieldName, impulseSource);
+
                 if (followTarget == null) return;
 
-                SetObject(so, "followTarget", followTarget);
-                SetObject(so, "lookAtTarget", followTarget);
+                SetObject(so, FollowTargetFieldName, followTarget);
+                SetObject(so, LookAtTargetFieldName, followTarget);
             });
         }
+
         #endregion
     }
 }
