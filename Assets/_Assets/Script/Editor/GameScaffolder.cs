@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using LilyOfValley.Core;
 using LilyOfValley.Inputs;
 using LilyOfValley.Player;
@@ -14,6 +13,8 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
+using static LilyOfValley.EditorTools.SerializedFieldUtility;
+using static LilyOfValley.EditorTools.EditorAssetUtility;
 
 namespace LilyOfValley.EditorTools
 {
@@ -36,16 +37,29 @@ namespace LilyOfValley.EditorTools
         #endregion
 
         #region Public Methods
-        [MenuItem("Tools/Lily of Valley/1 - Create Config Assets", priority = 10)]
-        public static void CreateConfigAssets()
+        public static InputReader EnsureInputReader()
         {
             EnsureFolder(SettingsFolder);
-            EnsureFolder(MaterialFolder);
 
             var reader = LoadOrCreate<InputReader>(InputReaderPath);
             var inputAsset = AssetDatabase.LoadAssetAtPath<InputActionAsset>(InputActionAssetPath);
-            if (inputAsset == null) Debug.LogWarning($"{nameof(GameScaffolder)}: '{InputActionAssetPath}' not found; assign an {nameof(InputActionAsset)} to the InputReader manually.");
-            else ApplyFields(reader, so => SetObject(so, "actions", inputAsset));
+            if (inputAsset == null)
+            {
+                Debug.LogWarning($"{nameof(GameScaffolder)}: '{InputActionAssetPath}' not found; assign an {nameof(InputActionAsset)} to '{InputReaderPath}' manually.");
+                return reader;
+            }
+
+            ApplyFields(reader, so => SetObject(so, "actions", inputAsset));
+            EditorUtility.SetDirty(reader);
+            AssetDatabase.SaveAssets();
+            return reader;
+        }
+
+        [MenuItem("Tools/Lily of Valley/1 - Create Config Assets", priority = 10)]
+        public static void CreateConfigAssets()
+        {
+            EnsureFolder(MaterialFolder);
+            EnsureInputReader();
 
             var preset = LoadOrCreate<DayNightPreset>(PresetPath);
             preset.ApplyDefaults();
@@ -120,10 +134,7 @@ namespace LilyOfValley.EditorTools
 
         private static void CreateEnvironment()
         {
-            var ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
-            ground.name = "Ground";
-            ground.transform.localScale = new Vector3(12f, 1f, 12f);
-            ground.isStatic = true;
+            GroundGridFactory.CreateGround("Ground");
 
             var landmarks = new GameObject("Landmarks");
             for (var i = 0; i < 8; i++)
@@ -467,66 +478,6 @@ namespace LilyOfValley.EditorTools
             rect.sizeDelta = size;
         }
 
-        private static void ApplyFields(Object target, Action<SerializedObject> edit)
-        {
-            var serialized = new SerializedObject(target);
-            edit(serialized);
-            serialized.ApplyModifiedPropertiesWithoutUndo();
-        }
-
-        private static void SetObject(SerializedObject serialized, string fieldName, Object value)
-        {
-            var property = FindField(serialized, fieldName);
-            if (property == null) return;
-
-            property.objectReferenceValue = value;
-        }
-
-        private static void SetString(SerializedObject serialized, string fieldName, string value)
-        {
-            var property = FindField(serialized, fieldName);
-            if (property == null) return;
-
-            property.stringValue = value;
-        }
-
-        private static void SetInt(SerializedObject serialized, string fieldName, int value)
-        {
-            var property = FindField(serialized, fieldName);
-            if (property == null) return;
-
-            property.intValue = value;
-        }
-
-        private static SerializedProperty FindField(SerializedObject serialized, string fieldName)
-        {
-            var property = serialized.FindProperty(fieldName);
-            if (property == null) Debug.LogError($"{nameof(GameScaffolder)}: field '{fieldName}' not found on {serialized.targetObject.GetType().Name}.");
-
-            return property;
-        }
-
-        private static T LoadOrCreate<T>(string path) where T : ScriptableObject
-        {
-            var asset = AssetDatabase.LoadAssetAtPath<T>(path);
-            if (asset != null) return asset;
-
-            asset = ScriptableObject.CreateInstance<T>();
-            AssetDatabase.CreateAsset(asset, path);
-            return asset;
-        }
-
-        private static void EnsureFolder(string path)
-        {
-            if (AssetDatabase.IsValidFolder(path)) return;
-
-            var parent = Path.GetDirectoryName(path);
-            if (string.IsNullOrEmpty(parent)) return;
-
-            parent = parent.Replace('\\', '/');
-            EnsureFolder(parent);
-            AssetDatabase.CreateFolder(parent, Path.GetFileName(path));
-        }
         #endregion
     }
 }
