@@ -1,6 +1,7 @@
 using LilyOfValley.Core;
 using LilyOfValley.Inputs;
 using LilyOfValley.Player;
+using LilyOfValley.UI;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -17,6 +18,7 @@ namespace LilyOfValley.EditorTools
         private const string PlayerName = "Player";
         private const string PivotName = "Camera Pivot";
         private const string SystemsName = "Game Systems";
+        private const string HudName = "HUD";
 
         private const float CapsuleHeight = 2f;
         private const float CapsuleRadius = 0.5f;
@@ -42,11 +44,9 @@ namespace LilyOfValley.EditorTools
             }
 
             CreateGround(scene);
-
-            var player = CreatePlayer(scene, reader);
-            if (player != null) AttachCamera(player.transform.Find(PivotName));
-
+            EnsureCameraSystem(EnsurePlayer(scene, reader));
             EnsureBootstrap(reader);
+            EnsureHud(scene);
 
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
@@ -69,12 +69,13 @@ namespace LilyOfValley.EditorTools
             Undo.RegisterCreatedObjectUndo(ground, "Create Ground");
         }
 
-        private static GameObject CreatePlayer(Scene scene, InputReader reader)
+        private static GameObject EnsurePlayer(Scene scene, InputReader reader)
         {
-            if (FindRoot(scene, PlayerName) != null)
+            var existing = FindRoot(scene, PlayerName);
+            if (existing != null)
             {
                 Debug.Log($"{nameof(TestSceneBuilder)}: '{PlayerName}' already exists; left untouched.");
-                return null;
+                return existing;
             }
 
             var player = GameObject.CreatePrimitive(PrimitiveType.Capsule);
@@ -107,21 +108,16 @@ namespace LilyOfValley.EditorTools
             return player;
         }
 
-        private static void AttachCamera(Transform pivot)
+        private static void EnsureCameraSystem(GameObject player)
         {
-            if (pivot == null) return;
-
-            var camera = Camera.main;
-            if (camera == null)
+            var pivot = player != null ? player.transform.Find(PivotName) : null;
+            if (pivot == null)
             {
-                var go = new GameObject("Main Camera", typeof(Camera), typeof(AudioListener)) { tag = "MainCamera" };
-                Undo.RegisterCreatedObjectUndo(go, "Create Main Camera");
-                camera = go.GetComponent<Camera>();
+                Debug.LogWarning($"{nameof(TestSceneBuilder)}: '{PivotName}' not found under '{PlayerName}'; camera system skipped.");
+                return;
             }
 
-            Undo.SetTransformParent(camera.transform, pivot, "Attach Camera To Player");
-            camera.transform.localPosition = new Vector3(0f, 0.6f, -5f);
-            camera.transform.localRotation = Quaternion.Euler(6f, 0f, 0f);
+            CameraRigFactory.EnsureCameraSystem(pivot);
         }
 
         private static void EnsureBootstrap(InputReader reader)
@@ -138,6 +134,24 @@ namespace LilyOfValley.EditorTools
 
             var bootstrap = systems.AddComponent<GameBootstrap>();
             ApplyFields(bootstrap, so => SetObject(so, "inputReader", reader));
+        }
+
+        private static void EnsureHud(Scene scene)
+        {
+            if (Object.FindFirstObjectByType<FpsCounterUI>(FindObjectsInactive.Include) != null)
+            {
+                Debug.Log($"{nameof(TestSceneBuilder)}: {nameof(FpsCounterUI)} already present; left untouched.");
+                return;
+            }
+
+            var hud = FindRoot(scene, HudName);
+            if (hud == null)
+            {
+                hud = UiFactory.CreateCanvas(HudName).gameObject;
+                Undo.RegisterCreatedObjectUndo(hud, "Create HUD");
+            }
+
+            UiFactory.CreateFpsCounter(hud.transform);
         }
 
         private static GameObject FindRoot(Scene scene, string name)

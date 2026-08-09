@@ -15,6 +15,7 @@ using UnityEngine.UI;
 using Object = UnityEngine.Object;
 using static LilyOfValley.EditorTools.SerializedFieldUtility;
 using static LilyOfValley.EditorTools.EditorAssetUtility;
+using static LilyOfValley.EditorTools.UiFactory;
 
 namespace LilyOfValley.EditorTools
 {
@@ -90,7 +91,7 @@ namespace LilyOfValley.EditorTools
             var moon = CreateDirectionalLight("Moon", new Color(0.55f, 0.65f, 0.95f), 0.2f, -130f);
             var cycle = CreateSystems(reader, preset, skybox, sun, moon);
 
-            CreatePlayer(reader);
+            CameraRigFactory.EnsureCameraSystem(CreatePlayer(reader));
             CreateUserInterface(reader, cycle);
 
             RenderSettings.skybox = skybox;
@@ -162,7 +163,7 @@ namespace LilyOfValley.EditorTools
             return light;
         }
 
-        private static void CreatePlayer(InputReader reader)
+        private static Transform CreatePlayer(InputReader reader)
         {
             var player = new GameObject("Player");
             player.transform.position = new Vector3(0f, 0.2f, -6f);
@@ -185,10 +186,6 @@ namespace LilyOfValley.EditorTools
             pivot.transform.SetParent(player.transform, false);
             pivot.transform.localPosition = new Vector3(0f, 1.62f, 0f);
 
-            var cameraGo = new GameObject("Main Camera", typeof(Camera), typeof(AudioListener));
-            cameraGo.tag = "MainCamera";
-            cameraGo.transform.SetParent(pivot.transform, false);
-
             var motor = player.AddComponent<PlayerMotor>();
             ApplyFields(motor, so => SetObject(so, "inputReader", reader));
 
@@ -198,20 +195,15 @@ namespace LilyOfValley.EditorTools
                 SetObject(so, "inputReader", reader);
                 SetObject(so, "cameraPivot", pivot.transform);
             });
+
+            return pivot.transform;
         }
 
         private static void CreateUserInterface(InputReader reader, DayNightCycle cycle)
         {
             new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
 
-            var canvasGo = new GameObject("UI", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
-            var canvas = canvasGo.GetComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-
-            var scaler = canvasGo.GetComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.matchWidthOrHeight = 0.5f;
+            var canvasGo = CreateCanvas("UI").gameObject;
 
             var clock = CreateText("Clock", canvasGo.transform, 34f, TextAlignmentOptions.TopLeft);
             AnchorCorner(clock.rectTransform, new Vector2(0f, 1f), new Vector2(32f, -24f), new Vector2(640f, 48f));
@@ -222,6 +214,8 @@ namespace LilyOfValley.EditorTools
                 SetObject(so, "cycle", cycle);
                 SetObject(so, "label", clock);
             });
+
+            CreateFpsCounter(canvasGo.transform);
 
             var hint = CreateText("Hint", canvasGo.transform, 22f, TextAlignmentOptions.BottomLeft);
             hint.text = "WASD move - Space jump - Shift sprint - Esc key bindings";
@@ -409,73 +403,6 @@ namespace LilyOfValley.EditorTools
 
             EditorUtility.SetDirty(material);
             return material;
-        }
-
-        private static RectTransform CreateUIObject(string name, Transform parent)
-        {
-            var go = new GameObject(name, typeof(RectTransform));
-            go.transform.SetParent(parent, false);
-            return (RectTransform)go.transform;
-        }
-
-        private static TMP_Text CreateText(string name, Transform parent, float fontSize, TextAlignmentOptions alignment)
-        {
-            var go = new GameObject(name, typeof(RectTransform));
-            go.transform.SetParent(parent, false);
-
-            var text = go.AddComponent<TextMeshProUGUI>();
-            text.fontSize = fontSize;
-            text.alignment = alignment;
-            text.color = Color.white;
-            text.text = name;
-            text.raycastTarget = false;
-            return text;
-        }
-
-        private static Button CreateButton(string name, Transform parent, float preferredWidth, out TMP_Text label)
-        {
-            var root = CreateUIObject(name, parent);
-
-            var image = root.gameObject.AddComponent<Image>();
-            image.color = new Color(0.20f, 0.23f, 0.30f, 1f);
-
-            var button = root.gameObject.AddComponent<Button>();
-            button.targetGraphic = image;
-
-            if (preferredWidth > 0f) AddLayoutElement(root.gameObject, preferredWidth, 44f);
-
-            label = CreateText("Text", root, 22f, TextAlignmentOptions.Center);
-            var rect = label.rectTransform;
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-            return button;
-        }
-
-        private static void AddLayoutElement(GameObject target, float preferredWidth, float preferredHeight)
-        {
-            var element = target.AddComponent<LayoutElement>();
-            if (preferredWidth > 0f)
-            {
-                element.preferredWidth = preferredWidth;
-                element.minWidth = preferredWidth;
-                element.flexibleWidth = 0f;
-            }
-
-            if (preferredHeight <= 0f) return;
-
-            element.preferredHeight = preferredHeight;
-            element.minHeight = preferredHeight;
-        }
-
-        private static void AnchorCorner(RectTransform rect, Vector2 anchor, Vector2 offset, Vector2 size)
-        {
-            rect.anchorMin = anchor;
-            rect.anchorMax = anchor;
-            rect.pivot = anchor;
-            rect.anchoredPosition = offset;
-            rect.sizeDelta = size;
         }
 
         #endregion
