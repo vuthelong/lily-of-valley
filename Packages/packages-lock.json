@@ -7,13 +7,6 @@
       "dependencies": {},
       "hash": "ceac8d6946b1125fe782cd171fbcb245b567dbf9"
     },
-    "com.kingfisher.ktools": {
-      "version": "https://github.com/vuthelong/kTool.git?path=/Assets/ThirdParty/KingfisherTools#1.0.0",
-      "depth": 0,
-      "source": "git",
-      "dependencies": {},
-      "hash": "db3588408aff258f4b212bcec0b9020b16b4493b"
-    },
     "com.unity.ai.navigation": {
       "version": "2.0.14",
       "depth": 0,
