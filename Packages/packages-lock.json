@@ -7,6 +7,55 @@
       "dependencies": {},
       "hash": "ceac8d6946b1125fe782cd171fbcb245b567dbf9"
     },
+    "com.kingfisher.kemoji": {
+      "version": "https://github.com/vuthelong/KEmoji.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "7e1ddff76cef7e4fbe9464821892d047615b54fd"
+    },
+    "com.kingfisher.kfavorites": {
+      "version": "https://github.com/vuthelong/KFavorites.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "d9dd1e1a5f98acbcdda71ebc5c8f4e43daf71a36"
+    },
+    "com.kingfisher.kfolders": {
+      "version": "https://github.com/vuthelong/KFolders.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "b865ef3ad4121f3d6ba3f612325577a92b68e413"
+    },
+    "com.kingfisher.khierarchy": {
+      "version": "https://github.com/vuthelong/KHierarchy.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "2d13b4c60846643f7d6bc66159351d5b34284898"
+    },
+    "com.kingfisher.kinspector": {
+      "version": "https://github.com/vuthelong/KInspector.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "16942a1c612f05fbaa5a7ab2df8f2e2eb34c726c"
+    },
+    "com.kingfisher.ksetting": {
+      "version": "https://github.com/vuthelong/KSetting.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "5325559b695b461025daeed47ec81bfb9f309a0e"
+    },
+    "com.kingfisher.ktabs": {
+      "version": "https://github.com/vuthelong/KTabs.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "8d6c8c21337ef7f56cf42c25916d78fb0f402413"
+    },
     "com.unity.ai.navigation": {
       "version": "2.0.14",
       "depth": 0,

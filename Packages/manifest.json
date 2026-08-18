@@ -1,6 +1,13 @@
 {
   "dependencies": {
     "com.cysharp.unitask": "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask",
+    "com.kingfisher.kemoji": "https://github.com/vuthelong/KEmoji.git",
+    "com.kingfisher.kfavorites": "https://github.com/vuthelong/KFavorites.git",
+    "com.kingfisher.kfolders": "https://github.com/vuthelong/KFolders.git",
+    "com.kingfisher.khierarchy": "https://github.com/vuthelong/KHierarchy.git",
+    "com.kingfisher.kinspector": "https://github.com/vuthelong/KInspector.git",
+    "com.kingfisher.ksetting": "https://github.com/vuthelong/KSetting.git",
+    "com.kingfisher.ktabs": "https://github.com/vuthelong/KTabs.git",
     "com.unity.ai.navigation": "2.0.14",
     "com.unity.cinemachine": "3.1.7",
     "com.unity.collab-proxy": "2.12.4",
